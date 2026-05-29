@@ -59,22 +59,33 @@ export default async function InventoryPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Inventory</h1>
-        {role === "admin" && (
-          <div className="flex items-center gap-3 text-sm">
-            <Link
-              href="/inventory/bulk-thresholds"
-              className="font-medium text-slate-500 hover:text-violet-700"
-            >
-              Bulk thresholds
-            </Link>
-            <Link
-              href="/inventory/new"
-              className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white active:bg-violet-700"
-            >
-              + New item
-            </Link>
-          </div>
-        )}
+        <div className="flex items-center gap-3 text-sm">
+          {/* CSV download needs a real navigation so Content-Disposition fires.
+              Next's <Link> would client-side-route it. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a
+            href="/api/inventory/export"
+            className="font-medium text-slate-500 hover:text-violet-700"
+          >
+            Export CSV
+          </a>
+          {role === "admin" && (
+            <>
+              <Link
+                href="/inventory/bulk-thresholds"
+                className="font-medium text-slate-500 hover:text-violet-700"
+              >
+                Bulk thresholds
+              </Link>
+              <Link
+                href="/inventory/new"
+                className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white active:bg-violet-700"
+              >
+                + New item
+              </Link>
+            </>
+          )}
+        </div>
       </div>
 
       <InventoryList
