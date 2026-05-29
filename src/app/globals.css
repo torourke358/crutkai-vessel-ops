@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  color: var(--color-foreground);
+  background: var(--color-background);
+}
+
+/* Pushes sticky headers below the iOS notch / Dynamic Island in PWA mode. */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
