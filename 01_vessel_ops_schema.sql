@@ -16,25 +16,22 @@ create extension if not exists pg_trgm;
 -- ============================================
 -- 0. App-wide configurable settings
 -- ============================================
+-- NOTE: app_settings already exists from petty cash (06_settings.sql) with
+-- `value text`. Don't redefine the table or its RLS — petty cash owns those.
+-- Just add the vessel-ops keys (with text values, matching the existing
+-- column type).
+
 create table if not exists app_settings (
   key        text primary key,
-  value      jsonb not null,
+  value      text,
   updated_at timestamptz default now()
 );
 
 insert into app_settings (key, value) values
-  ('timezone',        '"America/New_York"'::jsonb),
-  ('email_from',      '"onboarding@resend.dev"'::jsonb),  -- swap before go-live
-  ('email_from_name', '"Anne-Marie Ops"'::jsonb)
+  ('vessel_timezone',     'America/New_York'),
+  ('vessel_email_from',   'onboarding@resend.dev'),  -- swap before go-live
+  ('vessel_email_from_name', 'Anne-Marie Ops')
 on conflict (key) do nothing;
-
-alter table app_settings enable row level security;
-drop policy if exists "Anyone signed in reads app_settings" on app_settings;
-create policy "Anyone signed in reads app_settings" on app_settings
-  for select using (auth.uid() is not null);
-drop policy if exists "Admin writes app_settings" on app_settings;
-create policy "Admin writes app_settings" on app_settings
-  for all using (is_admin()) with check (is_admin());
 
 
 -- ============================================
