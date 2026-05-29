@@ -72,6 +72,12 @@ export default async function InventoryPage() {
           {role === "admin" && (
             <>
               <Link
+                href="/inventory/import"
+                className="font-medium text-slate-500 hover:text-violet-700"
+              >
+                Import PDF
+              </Link>
+              <Link
                 href="/inventory/bulk-thresholds"
                 className="font-medium text-slate-500 hover:text-violet-700"
               >
