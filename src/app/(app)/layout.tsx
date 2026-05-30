@@ -30,7 +30,7 @@ export default async function AppLayout({
             href="/"
             className="flex items-center gap-2 font-semibold text-slate-900"
           >
-            Vessel Ops
+            Thor
           </Link>
           <nav className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-500">
             <Link href="/inventory" className="hover:text-violet-700">

@@ -41,7 +41,7 @@ export default function LoginPage() {
     <main className="flex min-h-dvh flex-col justify-center px-6 py-12">
       <div className="mx-auto w-full max-w-sm">
         <h1 className="text-2xl font-semibold text-slate-900">
-          Anne-Marie Vessel Ops
+          Thor · M/Y Anne-Marie
         </h1>
         <p className="mt-2 text-sm text-slate-500">
           Sign in to manage inventory, maintenance, and yard tasks.

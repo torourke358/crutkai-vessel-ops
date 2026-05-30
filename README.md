@@ -1,6 +1,6 @@
-# Crutkai Vessel Ops
+# Thor (yacht ops) — M/Y Anne-Marie
 
-PWA for M/Y Anne-Marie. Unifies inventory, equipment, maintenance, and yard period management against a single Postgres database (shared with [crutkai-petty-cash](https://github.com/torourke358/crutkai-petty-cash)).
+PWA for M/Y Anne-Marie. Unifies inventory, equipment, maintenance, and yard period management against a single Postgres database (shared with [crutkai-petty-cash](https://github.com/torourke358/crutkai-petty-cash)). The repo directory is still named `crutkai-vessel-ops` for git-history continuity; the brand name is **Thor**.
 
 ## Stack
 
