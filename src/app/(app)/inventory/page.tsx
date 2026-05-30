@@ -78,10 +78,10 @@ export default async function InventoryPage() {
                 Import PDF
               </Link>
               <Link
-                href="/inventory/bulk-thresholds"
+                href="/inventory/edit"
                 className="font-medium text-slate-500 hover:text-violet-700"
               >
-                Bulk thresholds
+                Spreadsheet edit
               </Link>
               <Link
                 href="/inventory/new"

@@ -44,12 +44,20 @@ export default async function AllMaintenanceTasksPage() {
             Dashboard
           </Link>
           {role === "admin" && (
-            <Link
-              href="/maintenance/tasks/new"
-              className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white active:bg-violet-700"
-            >
-              + New task
-            </Link>
+            <>
+              <Link
+                href="/maintenance/tasks/import"
+                className="font-medium text-slate-500 hover:text-violet-700"
+              >
+                Import PDF
+              </Link>
+              <Link
+                href="/maintenance/tasks/new"
+                className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white active:bg-violet-700"
+              >
+                + New task
+              </Link>
+            </>
           )}
         </div>
       </div>

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { YardQuadrant, YardTask, YardTaskStatus } from "@/lib/types";
+import { QUADRANT_COLORS, nextQuadrantColor } from "@/lib/yard";
 
 export interface YardKanbanQuadrant extends YardQuadrant {
   tasks: YardKanbanTask[];
@@ -48,6 +49,9 @@ export default function YardKanban({
   const router = useRouter();
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  const [newColor, setNewColor] = useState<string>(
+    nextQuadrantColor(quadrants.length),
+  );
   const [savingStatus, setSavingStatus] = useState<string | null>(null);
 
   async function addQuadrant() {
@@ -55,13 +59,18 @@ export default function YardKanban({
     const res = await fetch(`/api/yard-periods/${periodId}/quadrants`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: newName.trim(), display_order: quadrants.length * 10 }),
+      body: JSON.stringify({
+        name: newName.trim(),
+        color: newColor,
+        display_order: quadrants.length * 10,
+      }),
     });
     if (!res.ok) {
       alert("Couldn't create quadrant.");
       return;
     }
     setNewName("");
+    setNewColor(nextQuadrantColor(quadrants.length + 1));
     setCreating(false);
     router.refresh();
   }
@@ -85,19 +94,22 @@ export default function YardKanban({
         </p>
         {isAdmin ? (
           creating ? (
-            <div className="mx-auto flex max-w-sm gap-2">
-              <input
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder="Quadrant name (e.g. Interior)"
-                className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
-              />
-              <button
-                onClick={addQuadrant}
-                className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white"
-              >
-                Add
-              </button>
+            <div className="mx-auto max-w-sm space-y-2">
+              <div className="flex gap-2">
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Quadrant name (e.g. Interior)"
+                  className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={addQuadrant}
+                  className="rounded-lg bg-violet-600 px-3 py-2 text-sm font-medium text-white"
+                >
+                  Add
+                </button>
+              </div>
+              <QuadrantColorPicker value={newColor} onChange={setNewColor} />
             </div>
           ) : (
             <button
@@ -126,6 +138,7 @@ export default function YardKanban({
                 placeholder="Quadrant name"
                 className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm"
               />
+              <QuadrantColorPicker value={newColor} onChange={setNewColor} />
               <button
                 onClick={addQuadrant}
                 className="rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white"
@@ -216,6 +229,34 @@ export default function YardKanban({
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function QuadrantColorPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (color: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-1">
+      {QUADRANT_COLORS.map((c) => {
+        const selected = c === value;
+        return (
+          <button
+            type="button"
+            key={c}
+            onClick={() => onChange(c)}
+            aria-label={`Color ${c}`}
+            className={`h-6 w-6 rounded-full ring-2 transition-shadow ${
+              selected ? "ring-slate-700" : "ring-transparent hover:ring-slate-300"
+            }`}
+            style={{ backgroundColor: c }}
+          />
+        );
+      })}
     </div>
   );
 }
