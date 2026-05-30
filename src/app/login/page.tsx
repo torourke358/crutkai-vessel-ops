@@ -40,12 +40,23 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-dvh flex-col justify-center px-6 py-12">
       <div className="mx-auto w-full max-w-sm">
-        <h1 className="text-2xl font-semibold text-slate-900">
-          Thor · M/Y Anne-Marie
-        </h1>
-        <p className="mt-2 text-sm text-slate-500">
-          Sign in to manage inventory, maintenance, and yard tasks.
-        </p>
+        <div className="flex flex-col items-center text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/icons/icon-192.png"
+            alt="Thor's hammer"
+            className="h-24 w-24 rounded-2xl ring-1 ring-slate-200"
+          />
+          <h1 className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
+            Thor
+          </h1>
+          <p className="mt-1 text-base font-medium text-slate-700">
+            Anne-Marie Vessel Ops
+          </p>
+          <p className="mt-2 text-sm text-slate-500">
+            Sign in to manage inventory, maintenance, and yard tasks.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div>
