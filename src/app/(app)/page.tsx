@@ -90,6 +90,21 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-6">
+      {/* Vessel banner — matches petty-cash's "Anne Marie" header. */}
+      <div className="relative h-40 overflow-hidden rounded-2xl bg-slate-200 sm:h-48">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/vessel.png"
+          alt="M/Y Anne-Marie"
+          className="h-full w-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+        <div className="absolute bottom-3 left-4 text-white drop-shadow">
+          <p className="text-lg font-semibold">Anne-Marie</p>
+          <p className="text-xs opacity-80">Thor — yacht ops</p>
+        </div>
+      </div>
+
       <div>
         <h1 className="text-2xl font-semibold text-slate-900">Welcome aboard.</h1>
         <p className="mt-1 text-sm text-slate-500">
