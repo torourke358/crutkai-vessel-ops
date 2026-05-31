@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Component } from "@/lib/types";
 import { MAX_INVENTORY_COMPONENTS } from "@/lib/types";
@@ -21,6 +21,19 @@ export default function ComponentMultiSelect({
 }) {
   const router = useRouter();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const pickerRef = useRef<HTMLDivElement | null>(null);
+
+  // Close the picker when a click lands outside the wrapper.
+  useEffect(() => {
+    if (!pickerOpen) return;
+    function onDown(e: PointerEvent) {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [pickerOpen]);
   const [filter, setFilter] = useState("");
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
@@ -122,7 +135,7 @@ export default function ComponentMultiSelect({
         ))}
 
         {!atMax && (
-          <div className="relative inline-block">
+          <div className="relative inline-block" ref={pickerRef}>
             <button
               type="button"
               onClick={() => setPickerOpen((o) => !o)}
