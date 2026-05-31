@@ -123,11 +123,13 @@ export interface YardTask {
   yard_period_id: string;
   quadrant_id: string;
   title: string;
-  description: string | null;
+  description: string | null; // used as the "Notes" field in the UI
   owner_id: string | null;
   progress_pct: number;
   effort: YardTaskEffort | null;
   due_date: string | null;
+  reminder_date: string | null;
+  resources: string | null;
   status: YardTaskStatus;
   actual_cost: number | null;
   completed_at: string | null;

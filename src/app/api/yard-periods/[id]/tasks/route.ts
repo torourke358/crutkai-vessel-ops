@@ -7,11 +7,13 @@ import { getUserRole } from "@/lib/auth";
 const bodySchema = z.object({
   quadrant_id: z.string().uuid(),
   title: z.string().trim().min(1).max(200),
-  description: z.string().trim().max(2000).nullable().optional(),
+  description: z.string().trim().max(4000).nullable().optional(),
   owner_id: z.string().uuid().nullable().optional(),
   progress_pct: z.number().int().min(0).max(100).default(0),
   effort: z.enum(["S", "M", "L"]).nullable().optional(),
   due_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  reminder_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  resources: z.string().trim().max(4000).nullable().optional(),
   status: z.enum(["todo", "in_progress", "done"]).default("todo"),
   actual_cost: z.number().min(0).nullable().optional(),
 });

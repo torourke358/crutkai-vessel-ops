@@ -3,11 +3,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
-import YardKanban, {
-  type YardKanbanQuadrant,
-  type YardKanbanTask,
-} from "@/components/YardKanban";
-import type { YardPeriod, YardQuadrant, YardTask } from "@/lib/types";
+import YardBoard, { type BoardQuadrant } from "@/components/YardBoard";
+import type { UserProfile, YardPeriod, YardQuadrant, YardTask } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -30,44 +27,23 @@ export default async function YardPeriodDetailPage({
       .returns<YardQuadrant[]>(),
     supabase
       .from("yard_tasks")
-      .select(
-        "id, title, status, progress_pct, effort, due_date, actual_cost, owner_id, quadrant_id",
-      )
+      .select()
       .eq("yard_period_id", id)
-      .order("due_date", { ascending: true, nullsFirst: false })
-      .returns<(Pick<
-        YardTask,
-        | "id"
-        | "title"
-        | "status"
-        | "progress_pct"
-        | "effort"
-        | "due_date"
-        | "actual_cost"
-        | "owner_id"
-      > & { quadrant_id: string })[]>(),
-    supabase.from("user_profiles").select("id, full_name"),
+      .order("created_at", { ascending: true })
+      .returns<YardTask[]>(),
+    supabase
+      .from("user_profiles")
+      .select("id, full_name")
+      .eq("active", true)
+      .order("full_name")
+      .returns<Pick<UserProfile, "id" | "full_name">[]>(),
   ]);
 
   if (!period) notFound();
 
-  const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name] as const));
-
-  const byQuadrant: YardKanbanQuadrant[] = (quadrants ?? []).map((q) => ({
+  const board: BoardQuadrant[] = (quadrants ?? []).map((q) => ({
     ...q,
-    tasks: (tasks ?? [])
-      .filter((t) => t.quadrant_id === q.id)
-      .map<YardKanbanTask>((t) => ({
-        id: t.id,
-        title: t.title,
-        status: t.status,
-        progress_pct: t.progress_pct,
-        effort: t.effort,
-        due_date: t.due_date,
-        actual_cost: t.actual_cost,
-        owner_id: t.owner_id,
-        ownerName: t.owner_id ? (nameById.get(t.owner_id) ?? null) : null,
-      })),
+    tasks: (tasks ?? []).filter((t) => t.quadrant_id === q.id),
   }));
 
   return (
@@ -77,7 +53,8 @@ export default async function YardPeriodDetailPage({
           <h1 className="text-lg font-semibold text-slate-900">{period.name}</h1>
           <p className="text-sm text-slate-500">
             {formatDate(period.start_date)}
-            {period.end_date && <span> → {formatDate(period.end_date)}</span>} · {period.status}
+            {period.end_date && <span> → {formatDate(period.end_date)}</span>}
+            {" "}· {period.status}
           </p>
         </div>
         <div className="flex items-center gap-3 text-sm">
@@ -95,7 +72,12 @@ export default async function YardPeriodDetailPage({
         </div>
       </div>
 
-      <YardKanban periodId={period.id} quadrants={byQuadrant} isAdmin={role === "admin"} />
+      <YardBoard
+        periodId={period.id}
+        quadrants={board}
+        users={users ?? []}
+        isAdmin={role === "admin"}
+      />
     </div>
   );
 }
