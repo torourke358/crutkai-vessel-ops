@@ -180,10 +180,11 @@ function QuadrantColumn({
               <button
                 type="button"
                 onClick={() => onSelect(t.id)}
+                style={selected ? undefined : { color: quadrant.color }}
                 className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   selected
                     ? "bg-violet-50 text-violet-900 ring-1 ring-violet-200"
-                    : "text-slate-700 hover:bg-slate-50"
+                    : "hover:bg-slate-50"
                 }`}
               >
                 <span className="flex-1 truncate">
