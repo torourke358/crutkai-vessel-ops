@@ -45,7 +45,7 @@ export default function ReminderWheel({
       </button>
 
       {open && (
-        <div className="absolute left-1/2 z-20 mt-2 w-56 -translate-x-1/2 rounded-xl bg-white p-3 shadow-lg ring-1 ring-slate-200">
+        <div className="absolute right-0 top-full z-30 mt-2 w-56 rounded-xl bg-white p-3 shadow-lg ring-1 ring-slate-200">
           <label className="block text-xs font-medium text-slate-500">
             Reminder date
           </label>

@@ -97,7 +97,7 @@ export default function YardTaskDetailPanel({
   }
 
   return (
-    <aside className="flex h-full flex-col gap-4 overflow-y-auto rounded-2xl bg-slate-900 p-5 text-slate-100">
+    <aside className="flex h-full flex-col gap-4 rounded-2xl bg-slate-900 p-5 text-slate-100">
       {/* Title */}
       <div>
         <input
