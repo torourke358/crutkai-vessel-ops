@@ -17,6 +17,8 @@ export default async function EquipmentDetailPage({
   const { id } = await params;
   const supabase = await createClient();
   const role = await getUserRole();
+  // eslint-disable-next-line react-hooks/purity -- server component, evaluated per request
+  const nowMs = Date.now();
 
   const [{ data: equipment }, { data: components }, { data: readings }] = await Promise.all([
     supabase.from("equipment").select().eq("id", id).single<Equipment>(),
@@ -59,7 +61,7 @@ export default async function EquipmentDetailPage({
       </div>
 
       {/* Quick stats */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
             Current hours
@@ -83,6 +85,26 @@ export default async function EquipmentDetailPage({
               {readings[0].recorded_by && (
                 <span> · {nameById.get(readings[0].recorded_by) ?? "Unknown"}</span>
               )}
+            </p>
+          )}
+        </div>
+        <div className="col-span-2 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100 sm:col-span-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            Commissioned
+          </p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+            {equipment.commissioned_date
+              ? formatDate(equipment.commissioned_date)
+              : "—"}
+          </p>
+          {equipment.commissioned_date && (
+            <p className="text-xs text-slate-400">
+              {(() => {
+                const [y, m, d] = equipment.commissioned_date.split("-").map(Number);
+                const since = new Date(y, m - 1, d, 12).getTime();
+                const years = (nowMs - since) / (1000 * 60 * 60 * 24 * 365.25);
+                return `~${years.toFixed(1)} years in service`;
+              })()}
             </p>
           )}
         </div>

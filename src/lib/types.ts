@@ -47,6 +47,7 @@ export interface Equipment {
   location_on_vessel: string | null;
   current_hours: number | null;
   component_id: string | null;
+  commissioned_date: string | null; // when the unit physically went into service
   notes: string | null;
   active: boolean;
   created_at: string;
@@ -140,6 +141,7 @@ export interface YardTask {
 
 export type NotificationKind =
   | "inventory_critical"
+  | "maintenance_due_soon"
   | "maintenance_due"
   | "maintenance_overdue";
 

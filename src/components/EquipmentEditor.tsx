@@ -30,6 +30,7 @@ export default function EquipmentEditor({
           location_on_vessel: initial.location_on_vessel ?? "",
           current_hours: initial.current_hours == null ? "" : String(initial.current_hours),
           component_id: initial.component_id ?? "",
+          commissioned_date: initial.commissioned_date ?? "",
           notes: initial.notes ?? "",
         }
       : emptyEquipmentForm,

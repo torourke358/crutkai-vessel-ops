@@ -54,14 +54,22 @@ export default async function EquipmentPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Equipment</h1>
-        {role === "admin" && (
+        <div className="flex items-center gap-3 text-sm">
           <Link
-            href="/equipment/new"
-            className="rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white active:bg-violet-700"
+            href="/equipment/log"
+            className="font-medium text-slate-500 hover:text-violet-700"
           >
-            + New equipment
+            Log hours
           </Link>
-        )}
+          {role === "admin" && (
+            <Link
+              href="/equipment/new"
+              className="rounded-xl bg-violet-600 px-4 py-2 font-medium text-white active:bg-violet-700"
+            >
+              + New equipment
+            </Link>
+          )}
+        </div>
       </div>
       <EquipmentList rows={eqRows} components={components ?? []} />
     </div>

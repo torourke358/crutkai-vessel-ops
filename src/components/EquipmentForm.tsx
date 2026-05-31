@@ -10,6 +10,7 @@ export interface EquipmentFormValues {
   location_on_vessel: string;
   current_hours: string;
   component_id: string;
+  commissioned_date: string;
   notes: string;
 }
 
@@ -114,23 +115,41 @@ export default function EquipmentForm({
         />
       </div>
 
-      <div>
-        <label htmlFor="component_id" className={labelClass}>
-          System
-        </label>
-        <select
-          id="component_id"
-          value={values.component_id}
-          onChange={(e) => onChange({ component_id: e.target.value })}
-          className={inputClass}
-        >
-          <option value="">(none)</option>
-          {components.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="component_id" className={labelClass}>
+            System
+          </label>
+          <select
+            id="component_id"
+            value={values.component_id}
+            onChange={(e) => onChange({ component_id: e.target.value })}
+            className={inputClass}
+          >
+            <option value="">(none)</option>
+            {components.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="commissioned_date" className={labelClass}>
+            Commissioned
+          </label>
+          <input
+            id="commissioned_date"
+            type="date"
+            value={values.commissioned_date}
+            onChange={(e) => onChange({ commissioned_date: e.target.value })}
+            className={inputClass}
+          />
+          <p className="mt-1 text-xs text-slate-400">
+            When the unit first went into service (may pre-date when you
+            started tracking it in Thor).
+          </p>
+        </div>
       </div>
 
       <div>
@@ -157,6 +176,7 @@ export const emptyEquipmentForm: EquipmentFormValues = {
   location_on_vessel: "",
   current_hours: "",
   component_id: "",
+  commissioned_date: "",
   notes: "",
 };
 
@@ -169,6 +189,7 @@ export function equipmentValuesToBody(v: EquipmentFormValues) {
     location_on_vessel: v.location_on_vessel.trim() || null,
     current_hours: v.current_hours === "" ? null : Number(v.current_hours),
     component_id: v.component_id || null,
+    commissioned_date: v.commissioned_date || null,
     notes: v.notes.trim() || null,
   };
 }

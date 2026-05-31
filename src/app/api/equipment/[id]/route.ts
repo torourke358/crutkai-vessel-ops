@@ -12,6 +12,7 @@ const patchSchema = z.object({
   location_on_vessel: z.string().trim().max(200).nullable().optional(),
   current_hours: z.number().int().min(0).nullable().optional(),
   component_id: z.string().uuid().nullable().optional(),
+  commissioned_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   active: z.boolean().optional(),
 });
