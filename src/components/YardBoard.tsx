@@ -10,6 +10,16 @@ export interface BoardQuadrant extends YardQuadrant {
   tasks: YardTask[];
 }
 
+// Pastel quadrant colors (Tailwind *-200) are too light for body text. Map
+// each seeded pastel to its matching *-700 for readable task titles; the
+// top strip keeps the soft pastel for differentiation at a glance.
+const PASTEL_TEXT: Record<string, string> = {
+  "#bae6fd": "#0369a1", // sky-200    → sky-700
+  "#bbf7d0": "#15803d", // green-200  → green-700
+  "#fed7aa": "#c2410c", // orange-200 → orange-700
+  "#ddd6fe": "#6d28d9", // violet-200 → violet-700
+};
+
 export default function YardBoard({
   periodId,
   quadrants,
@@ -180,7 +190,11 @@ function QuadrantColumn({
               <button
                 type="button"
                 onClick={() => onSelect(t.id)}
-                style={selected ? undefined : { color: quadrant.color }}
+                style={
+                  selected
+                    ? undefined
+                    : { color: PASTEL_TEXT[quadrant.color] ?? quadrant.color }
+                }
                 className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   selected
                     ? "bg-violet-50 text-violet-900 ring-1 ring-violet-200"
