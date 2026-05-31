@@ -150,7 +150,7 @@ export default function InventoryForm({
       <div>
         <span className={labelClass}>Related components</span>
         <p className="mt-0.5 text-xs text-slate-400">
-          Tag up to 8 systems / categories this part relates to.
+          Pick up to 8 related components.
         </p>
         <div className="mt-2">
           <ComponentMultiSelect
