@@ -12,7 +12,7 @@ export interface BoardQuadrant extends YardQuadrant {
 
 export default function YardBoard({
   periodId,
-  quadrants: initialQuadrants,
+  quadrants,
   users,
   isAdmin,
 }: {
@@ -22,10 +22,13 @@ export default function YardBoard({
   isAdmin: boolean;
 }) {
   const router = useRouter();
-  const [quadrants] = useState(initialQuadrants);
+  // `quadrants` comes straight from props. router.refresh() re-renders the
+  // server component, which passes the new task list down — caching in
+  // useState would freeze the board at first-render data and cause adds
+  // to silently disappear until a full page reload.
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(() => {
-    // Pre-select the first task across all quadrants if any exists.
-    for (const q of initialQuadrants) {
+    // Pre-select the first task on first render if any exist.
+    for (const q of quadrants) {
       if (q.tasks.length > 0) return q.tasks[0].id;
     }
     return null;
