@@ -78,7 +78,7 @@ const { data: inserted, error: insErr } = await admin
     part_name: marker,
     quantity: 5,
     critical_threshold: 4,
-    related_component_id: firstComp?.id ?? null,
+    component_ids: firstComp ? [firstComp.id] : [],
   })
   .select()
   .single();
