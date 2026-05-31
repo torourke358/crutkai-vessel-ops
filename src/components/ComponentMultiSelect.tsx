@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { Component } from "@/lib/types";
 import { MAX_INVENTORY_COMPONENTS } from "@/lib/types";
 
 // Chip-based multi-select for inventory_items.component_ids. Caps at 8.
+// Lets the user type a new component name in the picker's bottom field
+// to create it on the fly via POST /api/components.
 export default function ComponentMultiSelect({
   value,
   onChange,
@@ -16,18 +19,40 @@ export default function ComponentMultiSelect({
   components: Component[];
   compact?: boolean;
 }) {
+  const router = useRouter();
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Local mirror so a newly-created component shows up in the picker
+  // immediately, before router.refresh() round-trips.
+  const [localComponents, setLocalComponents] = useState<Component[]>(components);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setLocalComponents(components);
+  }, [components]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const selected = useMemo(
-    () => components.filter((c) => value.includes(c.id)),
-    [components, value],
+    () => localComponents.filter((c) => value.includes(c.id)),
+    [localComponents, value],
   );
-  const available = useMemo(
-    () => components.filter((c) => !value.includes(c.id)),
-    [components, value],
-  );
+  const available = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    return localComponents
+      .filter((c) => !value.includes(c.id))
+      .filter((c) => (q ? c.name.toLowerCase().includes(q) : true));
+  }, [localComponents, value, filter]);
 
   const atMax = value.length >= MAX_INVENTORY_COMPONENTS;
+  const filterMatchesExisting = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return false;
+    return localComponents.some((c) => c.name.toLowerCase() === q);
+  }, [filter, localComponents]);
+  const showCreateOption =
+    filter.trim().length > 0 && !filterMatchesExisting && !atMax;
 
   function remove(id: string) {
     onChange(value.filter((v) => v !== id));
@@ -35,7 +60,38 @@ export default function ComponentMultiSelect({
   function add(id: string) {
     if (atMax) return;
     onChange([...value, id]);
+    setFilter("");
     setPickerOpen(false);
+  }
+
+  async function createNew() {
+    const name = filter.trim();
+    if (!name) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await fetch("/api/components", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        setCreateError("Couldn't add that component.");
+        return;
+      }
+      const created = (await res.json()) as Component;
+      setLocalComponents((prev) =>
+        prev.some((c) => c.id === created.id) ? prev : [...prev, created],
+      );
+      if (!value.includes(created.id) && value.length < MAX_INVENTORY_COMPONENTS) {
+        onChange([...value, created.id]);
+      }
+      setFilter("");
+      setPickerOpen(false);
+      router.refresh();
+    } finally {
+      setCreating(false);
+    }
   }
 
   return (
@@ -75,13 +131,35 @@ export default function ComponentMultiSelect({
               + Add
             </button>
             {pickerOpen && (
-              <div className="absolute left-0 top-full z-20 mt-1 max-h-60 w-48 overflow-y-auto rounded-xl bg-white p-1 shadow-lg ring-1 ring-slate-200">
-                {available.length === 0 ? (
-                  <p className="px-2 py-2 text-xs text-slate-400">
-                    All components added.
-                  </p>
-                ) : (
-                  available.map((c) => (
+              <div className="absolute left-0 top-full z-30 mt-1 w-64 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-slate-200">
+                <input
+                  autoFocus
+                  type="text"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                  placeholder="Search or type a new name…"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (available.length > 0) {
+                        e.preventDefault();
+                        add(available[0].id);
+                      } else if (showCreateOption) {
+                        e.preventDefault();
+                        void createNew();
+                      }
+                    } else if (e.key === "Escape") {
+                      setPickerOpen(false);
+                    }
+                  }}
+                  className="block w-full border-b border-slate-100 px-3 py-2 text-sm outline-none focus:bg-slate-50"
+                />
+                <div className="max-h-60 overflow-y-auto p-1">
+                  {available.length === 0 && !showCreateOption && (
+                    <p className="px-2 py-2 text-xs text-slate-400">
+                      No matches.
+                    </p>
+                  )}
+                  {available.map((c) => (
                     <button
                       key={c.id}
                       type="button"
@@ -90,7 +168,22 @@ export default function ComponentMultiSelect({
                     >
                       {c.name}
                     </button>
-                  ))
+                  ))}
+                  {showCreateOption && (
+                    <button
+                      type="button"
+                      onClick={() => void createNew()}
+                      disabled={creating}
+                      className="block w-full rounded-lg px-2 py-1.5 text-left text-sm font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60"
+                    >
+                      {creating ? "Adding…" : `+ Add "${filter.trim()}" as new component`}
+                    </button>
+                  )}
+                </div>
+                {createError && (
+                  <p className="border-t border-slate-100 px-3 py-2 text-xs text-rose-700">
+                    {createError}
+                  </p>
                 )}
               </div>
             )}
