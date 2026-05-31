@@ -42,7 +42,6 @@ export default function MaintenanceTaskEditor({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   async function save() {
     if (!values.title.trim() || !values.equipment_id) {
@@ -66,13 +65,8 @@ export default function MaintenanceTaskEditor({
       setError("Save failed. Please try again.");
       return;
     }
-    if (isEdit) {
-      setMessage("Saved.");
-      router.refresh();
-    } else {
-      router.push("/maintenance/tasks");
-      router.refresh();
-    }
+    router.push("/maintenance/tasks");
+    router.refresh();
   }
 
   async function remove() {
@@ -102,9 +96,6 @@ export default function MaintenanceTaskEditor({
       </div>
 
       {error && <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
-      {message && (
-        <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p>
-      )}
 
       <MaintenanceTaskForm
         values={values}

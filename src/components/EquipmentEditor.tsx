@@ -40,7 +40,6 @@ export default function EquipmentEditor({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   async function save() {
     if (!values.name.trim()) {
@@ -61,13 +60,8 @@ export default function EquipmentEditor({
       setError("Save failed. Please try again.");
       return;
     }
-    if (isEdit) {
-      setMessage("Saved.");
-      router.refresh();
-    } else {
-      router.push("/equipment");
-      router.refresh();
-    }
+    router.push("/equipment");
+    router.refresh();
   }
 
   async function remove() {
@@ -101,12 +95,6 @@ export default function EquipmentEditor({
           {error}
         </p>
       )}
-      {message && (
-        <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {message}
-        </p>
-      )}
-
       <EquipmentForm
         values={values}
         onChange={(patch) => setValues((v) => ({ ...v, ...patch }))}

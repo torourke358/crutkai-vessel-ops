@@ -42,7 +42,6 @@ export default function InventoryEditor({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   async function save() {
     if (!values.part_name.trim()) {
@@ -66,13 +65,8 @@ export default function InventoryEditor({
       return;
     }
 
-    if (isEdit) {
-      setMessage("Saved.");
-      router.refresh();
-    } else {
-      router.push("/inventory");
-      router.refresh();
-    }
+    router.push("/inventory");
+    router.refresh();
   }
 
   async function remove() {
@@ -107,12 +101,6 @@ export default function InventoryEditor({
           {error}
         </p>
       )}
-      {message && (
-        <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          {message}
-        </p>
-      )}
-
       <InventoryForm
         values={values}
         onChange={(patch) => setValues((v) => ({ ...v, ...patch }))}
