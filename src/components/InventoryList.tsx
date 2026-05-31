@@ -20,9 +20,8 @@ export interface InventoryRow {
   location: string | null;
   notes: string | null;
   critical_threshold: number | null;
-  componentId: string | null;
-  componentCode: string | null;
-  componentName: string | null;
+  componentIds: string[];
+  hasPhoto: boolean;
 }
 
 const STATUS_FILTERS: { id: "all" | InventoryStatus; label: string }[] = [
@@ -62,7 +61,7 @@ export default function InventoryList({
   const visible = useMemo(() => {
     const terms = debounced.split(/\s+/).filter(Boolean);
     return rows.filter((r) => {
-      if (componentFilter !== "all" && r.componentId !== componentFilter) return false;
+      if (componentFilter !== "all" && !r.componentIds.includes(componentFilter)) return false;
       if (locationFilter !== "all" && r.location !== locationFilter) return false;
       if (statusFilter !== "all") {
         if (computeStatus(r.quantity, r.critical_threshold) !== statusFilter) return false;
@@ -185,14 +184,15 @@ export default function InventoryList({
                       </p>
                       <p className="truncate text-sm text-slate-500">
                         {[r.make, r.part_number].filter(Boolean).join(" · ") || "—"}
-                        {r.componentName && (
+                        {r.componentIds.length > 0 && (
                           <span className="ml-1 text-slate-400">
-                            · {r.componentName}
+                            · {componentNamesFor(r.componentIds, components)}
                           </span>
                         )}
                       </p>
-                      {r.location && (
+                      {(r.location || r.hasPhoto) && (
                         <p className="truncate text-xs text-slate-400">
+                          {r.hasPhoto && <span className="mr-1">📷</span>}
                           {r.location}
                         </p>
                       )}
@@ -224,6 +224,14 @@ export default function InventoryList({
       </div>
     </div>
   );
+}
+
+function componentNamesFor(ids: string[], components: Component[]): string {
+  if (ids.length === 0) return "";
+  const byId = new Map(components.map((c) => [c.id, c.name] as const));
+  const names = ids.map((id) => byId.get(id)).filter(Boolean) as string[];
+  if (names.length <= 2) return names.join(", ");
+  return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
 }
 
 function SummaryCell({

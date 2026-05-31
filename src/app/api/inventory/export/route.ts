@@ -4,7 +4,9 @@ import { todayLocal } from "@/lib/format";
 import { computeStatus, STATUS_LABELS } from "@/lib/inventory";
 
 // CSV export. All signed-in users can pull it — RLS still scopes the read,
-// and there's no sensitive PII here.
+// and there's no sensitive PII here. Components are joined into a single
+// semicolon-separated string ("Hose; AC; Lights") since a row can carry up
+// to 8 of them.
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -12,30 +14,35 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
-  const { data: rows, error } = await supabase
-    .from("inventory_items")
-    .select(
-      "part_name, part_number, make, quantity, unit, location, notes, critical_threshold, component:components(name)",
-    )
-    .order("part_name", { ascending: true })
-    .returns<
-      {
-        part_name: string;
-        part_number: string | null;
-        make: string | null;
-        quantity: number;
-        unit: string;
-        location: string | null;
-        notes: string | null;
-        critical_threshold: number | null;
-        component: { name: string } | null;
-      }[]
-    >();
+  const [{ data: rows, error }, { data: comps }] = await Promise.all([
+    supabase
+      .from("inventory_items")
+      .select(
+        "part_name, part_number, make, quantity, unit, location, notes, critical_threshold, component_ids",
+      )
+      .order("part_name", { ascending: true })
+      .returns<
+        {
+          part_name: string;
+          part_number: string | null;
+          make: string | null;
+          quantity: number;
+          unit: string;
+          location: string | null;
+          notes: string | null;
+          critical_threshold: number | null;
+          component_ids: string[];
+        }[]
+      >(),
+    supabase.from("components").select("id, name"),
+  ]);
 
   if (error) {
     console.error("inventory export failed", error);
     return NextResponse.json({ error: "export_failed" }, { status: 500 });
   }
+
+  const nameById = new Map((comps ?? []).map((c) => [c.id, c.name] as const));
 
   const headers = [
     "Part name",
@@ -44,7 +51,7 @@ export async function GET() {
     "Quantity",
     "Unit",
     "Location",
-    "Component",
+    "Components",
     "Critical threshold",
     "Status",
     "Notes",
@@ -53,6 +60,10 @@ export async function GET() {
   const lines: string[] = [headers.map(csvCell).join(",")];
   for (const r of rows ?? []) {
     const status = computeStatus(r.quantity, r.critical_threshold);
+    const componentNames = (r.component_ids ?? [])
+      .map((id) => nameById.get(id))
+      .filter(Boolean)
+      .join("; ");
     lines.push(
       [
         csvCell(r.part_name),
@@ -61,7 +72,7 @@ export async function GET() {
         csvCell(r.quantity),
         csvCell(r.unit),
         csvCell(r.location ?? ""),
-        csvCell(r.component?.name ?? ""),
+        csvCell(componentNames),
         csvCell(r.critical_threshold ?? ""),
         csvCell(STATUS_LABELS[status]),
         csvCell(r.notes ?? ""),

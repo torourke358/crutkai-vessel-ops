@@ -30,7 +30,8 @@ export default function InventoryEditor({
           quantity: String(initial.quantity),
           unit: initial.unit,
           location: initial.location ?? "",
-          related_component_id: initial.related_component_id ?? "",
+          component_ids: initial.component_ids ?? [],
+          location_photo_path: initial.location_photo_path ?? null,
           critical_threshold:
             initial.critical_threshold == null ? "" : String(initial.critical_threshold),
           notes: initial.notes ?? "",

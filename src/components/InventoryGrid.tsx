@@ -18,24 +18,24 @@ export interface GridRow {
   quantity: number;
   unit: string;
   location: string | null;
-  related_component_id: string | null;
+  component_ids: string[];
   critical_threshold: number | null;
   notes: string | null;
 }
 
-type Field = keyof Omit<GridRow, "id">;
-type ValueByField = {
-  part_name: string;
-  part_number: string;
-  make: string;
-  quantity: number;
-  unit: string;
-  location: string;
-  related_component_id: string;
-  critical_threshold: string;
-  notes: string;
-};
-type EditState = Partial<ValueByField>;
+// Inline-editable scalar fields. component_ids is multi-value — managed
+// in the detail form, displayed read-only here.
+type Field =
+  | "part_name"
+  | "part_number"
+  | "make"
+  | "quantity"
+  | "unit"
+  | "location"
+  | "critical_threshold"
+  | "notes";
+
+type EditState = Partial<Record<Field, string | number>>;
 
 const cellInputClass =
   "w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-sm text-slate-900 hover:border-slate-200 focus:border-violet-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-violet-200";
@@ -62,31 +62,30 @@ export default function InventoryGrid({
     return () => clearTimeout(t);
   }, [search]);
 
-  const componentName = useMemo(() => {
+  const componentNameById = useMemo(() => {
     const m = new Map<string, string>();
     for (const c of components) m.set(c.id, c.name);
     return m;
   }, [components]);
 
-  // Fast lookup: return the current displayed value (edited override OR
-  // original) for a row+field.
   function value(row: GridRow, field: Field): string | number {
     const e = edits.get(row.id);
     if (e && field in e) {
-      const v = (e as Record<string, unknown>)[field];
+      const v = e[field];
       return (v as string | number) ?? "";
     }
-    const original = row[field];
+    const original = row[field as keyof GridRow];
     if (original == null) return "";
     if (typeof original === "number") return original;
-    return original;
+    if (Array.isArray(original)) return "";
+    return original as string;
   }
 
-  function setField(rowId: string, field: Field, value: string | number) {
+  function setField(rowId: string, field: Field, val: string | number) {
     setEdits((prev) => {
       const next = new Map(prev);
       const current = next.get(rowId) ?? {};
-      next.set(rowId, { ...current, [field]: value });
+      next.set(rowId, { ...current, [field]: val });
       return next;
     });
     setMessage(null);
@@ -107,11 +106,10 @@ export default function InventoryGrid({
     setError(null);
   }
 
-  // Visible subset after filter + search. Edits don't affect visibility.
   const visible = useMemo(() => {
     const terms = debounced.split(/\s+/).filter(Boolean);
     return rows.filter((r) => {
-      if (componentFilter !== "all" && r.related_component_id !== componentFilter) return false;
+      if (componentFilter !== "all" && !r.component_ids.includes(componentFilter)) return false;
       if (terms.length > 0) {
         const hay = `${r.part_name} ${r.part_number ?? ""} ${r.make ?? ""} ${r.location ?? ""}`.toLowerCase();
         if (!terms.every((t) => hay.includes(t))) return false;
@@ -120,7 +118,6 @@ export default function InventoryGrid({
     });
   }, [rows, componentFilter, debounced]);
 
-  // Build the PATCH payload from `edits` — only fields that actually changed.
   function buildUpdates() {
     const updates: (Partial<GridRow> & { id: string })[] = [];
     for (const [id, e] of edits.entries()) {
@@ -145,11 +142,9 @@ export default function InventoryGrid({
           }
         } else {
           const incoming = typeof raw === "string" ? raw.trim() : raw;
-          const nullable = (
-            ["part_number", "make", "location", "related_component_id", "notes"] as Field[]
-          ).includes(field);
+          const nullable = (["part_number", "make", "location", "notes"] as Field[]).includes(field);
           const normalized = nullable && incoming === "" ? null : (incoming as string);
-          if (normalized !== row[field]) {
+          if (normalized !== row[field as keyof GridRow]) {
             (u as Record<string, unknown>)[field] = normalized;
             changed = true;
           }
@@ -207,9 +202,8 @@ export default function InventoryGrid({
       </div>
 
       <p className="text-sm text-slate-500">
-        Every cell is editable. Click into a cell, change it, then Save. Touch
-        threshold-setting does <span className="font-medium">not</span> fire
-        alerts — only stock changes do.
+        Click any cell to edit it. Components and location photo are shown
+        read-only here — open the item&apos;s detail page to change those.
       </p>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -242,7 +236,6 @@ export default function InventoryGrid({
         <p className="rounded-xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{message}</p>
       )}
 
-      {/* Sticky action bar */}
       <div className="sticky top-16 z-10 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-white p-3 shadow-sm ring-1 ring-slate-200">
         <p className="text-sm text-slate-700">
           {dirtyCount === 0
@@ -269,7 +262,6 @@ export default function InventoryGrid({
         </div>
       </div>
 
-      {/* Grid */}
       <div className="overflow-x-auto rounded-2xl bg-white ring-1 ring-slate-100">
         <table className="w-full min-w-[1200px] border-separate border-spacing-0 text-sm">
           <thead className="sticky top-0 bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -280,7 +272,7 @@ export default function InventoryGrid({
               <Th className="w-20 text-right">Qty</Th>
               <Th className="w-24">Unit</Th>
               <Th>Location</Th>
-              <Th>Component</Th>
+              <Th>Components</Th>
               <Th className="w-24 text-right">Critical</Th>
               <Th className="w-28">Status</Th>
               <Th>Notes</Th>
@@ -298,8 +290,8 @@ export default function InventoryGrid({
               visible.map((r) => {
                 const dirty = edits.has(r.id);
                 const qty = Number(value(r, "quantity"));
-                const thr = value(r, "critical_threshold");
-                const status = computeStatus(qty, thr === "" ? null : Number(thr));
+                const thrRaw = value(r, "critical_threshold");
+                const status = computeStatus(qty, thrRaw === "" ? null : Number(thrRaw));
                 return (
                   <tr
                     key={r.id}
@@ -335,11 +327,7 @@ export default function InventoryGrid({
                         step={1}
                         value={value(r, "quantity") as number}
                         onChange={(e) =>
-                          setField(
-                            r.id,
-                            "quantity",
-                            Math.max(0, Number(e.target.value || 0)),
-                          )
+                          setField(r.id, "quantity", Math.max(0, Number(e.target.value || 0)))
                         }
                         className={`${cellInputClass} tabular-nums text-right`}
                       />
@@ -359,21 +347,24 @@ export default function InventoryGrid({
                       />
                     </Td>
                     <Td>
-                      <select
-                        value={(value(r, "related_component_id") as string) || ""}
-                        onChange={(e) =>
-                          setField(r.id, "related_component_id", e.target.value)
-                        }
-                        className={cellInputClass}
+                      <Link
+                        href={`/inventory/${r.id}`}
+                        className="flex flex-wrap gap-1 px-2 py-1 hover:bg-slate-50"
+                        title="Edit components on the detail page"
                       >
-                        <option value="">—</option>
-                        {components.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
-                      {componentName.get(r.related_component_id ?? "") && !dirty && null}
+                        {r.component_ids.length === 0 ? (
+                          <span className="text-xs text-slate-400">—</span>
+                        ) : (
+                          r.component_ids.map((id) => (
+                            <span
+                              key={id}
+                              className="inline-block rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-800"
+                            >
+                              {componentNameById.get(id) ?? "?"}
+                            </span>
+                          ))
+                        )}
+                      </Link>
                     </Td>
                     <Td className="text-right">
                       <input

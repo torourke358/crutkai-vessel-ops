@@ -16,8 +16,8 @@ interface RawRow {
   location: string | null;
   notes: string | null;
   critical_threshold: number | null;
-  related_component_id: string | null;
-  component: { code: string; name: string } | null;
+  component_ids: string[];
+  location_photo_path: string | null;
 }
 
 export default async function InventoryPage() {
@@ -28,7 +28,7 @@ export default async function InventoryPage() {
     supabase
       .from("inventory_items")
       .select(
-        "id, part_name, part_number, make, quantity, unit, location, notes, critical_threshold, related_component_id, component:components(code, name)",
+        "id, part_name, part_number, make, quantity, unit, location, notes, critical_threshold, component_ids, location_photo_path",
       )
       .order("part_name", { ascending: true })
       .returns<RawRow[]>(),
@@ -50,9 +50,8 @@ export default async function InventoryPage() {
     location: r.location,
     notes: r.notes,
     critical_threshold: r.critical_threshold,
-    componentId: r.related_component_id,
-    componentCode: r.component?.code ?? null,
-    componentName: r.component?.name ?? null,
+    componentIds: r.component_ids ?? [],
+    hasPhoto: !!r.location_photo_path,
   }));
 
   return (

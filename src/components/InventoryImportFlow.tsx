@@ -23,7 +23,7 @@ interface CommitRow {
   quantity: number;
   unit: string;
   location: string | null;
-  related_component_id: string | null;
+  component_ids: string[];
   critical_threshold: number | null;
 }
 
@@ -83,7 +83,9 @@ export default function InventoryImportFlow({ components }: { components: Compon
           quantity: r.quantity ?? 0,
           unit: r.unit || "Units",
           location: r.location,
-          related_component_id: nameToComponentId(r.related_component),
+          component_ids: nameToComponentId(r.related_component)
+            ? [nameToComponentId(r.related_component) as string]
+            : [],
           critical_threshold: r.critical_threshold,
         }));
         setRows(mapped);
@@ -214,11 +216,14 @@ export default function InventoryImportFlow({ components }: { components: Compon
                     className="rounded-lg border border-slate-200 px-2 py-1 text-sm sm:col-span-2"
                   />
                   <select
-                    value={r.related_component_id ?? ""}
+                    value={r.component_ids[0] ?? ""}
                     onChange={(e) =>
-                      updateRow(i, { related_component_id: e.target.value || null })
+                      updateRow(i, {
+                        component_ids: e.target.value ? [e.target.value] : [],
+                      })
                     }
                     className="rounded-lg border border-slate-200 px-2 py-1 text-sm"
+                    title="Pick the primary component. Add more on the item detail page after import."
                   >
                     <option value="">(component)</option>
                     {components.map((c) => (

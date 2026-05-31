@@ -14,7 +14,7 @@ export default async function InventoryGridPage() {
     supabase
       .from("inventory_items")
       .select(
-        "id, part_name, part_number, make, quantity, unit, location, notes, critical_threshold, related_component_id",
+        "id, part_name, part_number, make, quantity, unit, location, notes, critical_threshold, component_ids",
       )
       .order("part_name", { ascending: true })
       .returns<GridRow[]>(),

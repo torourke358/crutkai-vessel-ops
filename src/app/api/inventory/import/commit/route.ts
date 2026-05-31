@@ -11,7 +11,7 @@ const rowSchema = z.object({
   quantity: z.number().int().min(0),
   unit: z.string().trim().max(40).default("Units"),
   location: z.string().trim().max(200).nullable().optional(),
-  related_component_id: z.string().uuid().nullable().optional(),
+  component_ids: z.array(z.string().uuid()).max(8).optional(),
   critical_threshold: z.number().int().min(0).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         quantity: r.quantity,
         unit: r.unit,
         location: r.location ?? null,
-        related_component_id: r.related_component_id ?? null,
+        component_ids: r.component_ids ?? [],
         critical_threshold: r.critical_threshold ?? null,
         notes: r.notes ?? null,
       })

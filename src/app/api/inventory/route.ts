@@ -11,7 +11,8 @@ const bodySchema = z.object({
   quantity: z.number().int().min(0),
   unit: z.string().trim().max(40).default("Units"),
   location: z.string().trim().max(200).nullable().optional(),
-  related_component_id: z.string().uuid().nullable().optional(),
+  component_ids: z.array(z.string().uuid()).max(8).default([]),
+  location_photo_path: z.string().max(500).nullable().optional(),
   critical_threshold: z.number().int().min(0).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
@@ -45,7 +46,8 @@ export async function POST(request: Request) {
       quantity: b.quantity,
       unit: b.unit,
       location: b.location ?? null,
-      related_component_id: b.related_component_id ?? null,
+      component_ids: b.component_ids,
+      location_photo_path: b.location_photo_path ?? null,
       critical_threshold: b.critical_threshold ?? null,
       notes: b.notes ?? null,
     })

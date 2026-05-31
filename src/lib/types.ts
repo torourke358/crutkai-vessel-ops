@@ -27,13 +27,16 @@ export interface InventoryItem {
   quantity: number;
   unit: string;
   location: string | null;
-  related_component_id: string | null;
+  component_ids: string[];           // up to 8 component refs (replaces related_component_id)
+  location_photo_path: string | null; // storage path under inventory-photos bucket
   critical_threshold: number | null;
   notes: string | null;
   alert_state: "above" | "at_or_below";
   created_at: string;
   updated_at: string;
 }
+
+export const MAX_INVENTORY_COMPONENTS = 8;
 
 export interface Equipment {
   id: string;

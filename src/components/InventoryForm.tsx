@@ -1,6 +1,8 @@
 "use client";
 
 import type { Component } from "@/lib/types";
+import ComponentMultiSelect from "@/components/ComponentMultiSelect";
+import InventoryPhotoCapture from "@/components/InventoryPhotoCapture";
 
 export interface InventoryFormValues {
   part_name: string;
@@ -9,7 +11,8 @@ export interface InventoryFormValues {
   quantity: string;          // string for the input; coerced on submit
   unit: string;
   location: string;
-  related_component_id: string;
+  component_ids: string[];
+  location_photo_path: string | null;
   critical_threshold: string; // empty string = "no threshold"
   notes: string;
 }
@@ -127,26 +130,35 @@ export default function InventoryForm({
           value={values.location}
           onChange={(e) => onChange({ location: e.target.value })}
           className={inputClass}
+          placeholder="e.g. Lightbulb case · electrical box under master"
         />
       </div>
 
       <div>
-        <label htmlFor="related_component_id" className={labelClass}>
-          Related component
-        </label>
-        <select
-          id="related_component_id"
-          value={values.related_component_id}
-          onChange={(e) => onChange({ related_component_id: e.target.value })}
-          className={inputClass}
-        >
-          <option value="">(none)</option>
-          {components.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+        <span className={labelClass}>Location photo</span>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Snap a quick photo of where this part lives so crew can find it later.
+        </p>
+        <div className="mt-2">
+          <InventoryPhotoCapture
+            value={values.location_photo_path}
+            onChange={(next) => onChange({ location_photo_path: next })}
+          />
+        </div>
+      </div>
+
+      <div>
+        <span className={labelClass}>Related components</span>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Tag up to 8 systems / categories this part relates to.
+        </p>
+        <div className="mt-2">
+          <ComponentMultiSelect
+            value={values.component_ids}
+            onChange={(next) => onChange({ component_ids: next })}
+            components={components}
+          />
+        </div>
       </div>
 
       <div>
@@ -172,7 +184,8 @@ export const emptyInventoryForm: InventoryFormValues = {
   quantity: "0",
   unit: "Units",
   location: "",
-  related_component_id: "",
+  component_ids: [],
+  location_photo_path: null,
   critical_threshold: "",
   notes: "",
 };
@@ -186,7 +199,8 @@ export function formValuesToBody(v: InventoryFormValues) {
     quantity: Number(v.quantity || 0),
     unit: v.unit.trim() || "Units",
     location: v.location.trim() || null,
-    related_component_id: v.related_component_id || null,
+    component_ids: v.component_ids,
+    location_photo_path: v.location_photo_path,
     critical_threshold: v.critical_threshold === "" ? null : Number(v.critical_threshold),
     notes: v.notes.trim() || null,
   };
