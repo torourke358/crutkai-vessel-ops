@@ -31,6 +31,7 @@ export default function EquipmentEditor({
           current_hours: initial.current_hours == null ? "" : String(initial.current_hours),
           component_id: initial.component_id ?? "",
           commissioned_date: initial.commissioned_date ?? "",
+          image_path: initial.image_path ?? null,
           notes: initial.notes ?? "",
         }
       : emptyEquipmentForm,

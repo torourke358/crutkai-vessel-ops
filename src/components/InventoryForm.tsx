@@ -2,7 +2,7 @@
 
 import type { Component } from "@/lib/types";
 import ComponentMultiSelect from "@/components/ComponentMultiSelect";
-import InventoryPhotoCapture from "@/components/InventoryPhotoCapture";
+import PhotoCapture from "@/components/PhotoCapture";
 
 export interface InventoryFormValues {
   part_name: string;
@@ -140,9 +140,11 @@ export default function InventoryForm({
           Snap a quick photo of where this part lives so crew can find it later.
         </p>
         <div className="mt-2">
-          <InventoryPhotoCapture
+          <PhotoCapture
             value={values.location_photo_path}
             onChange={(next) => onChange({ location_photo_path: next })}
+            bucket="inventory-photos"
+            alt="Location"
           />
         </div>
       </div>

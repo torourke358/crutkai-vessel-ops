@@ -1,6 +1,7 @@
 "use client";
 
 import type { Component } from "@/lib/types";
+import PhotoCapture from "@/components/PhotoCapture";
 
 export interface EquipmentFormValues {
   name: string;
@@ -11,6 +12,7 @@ export interface EquipmentFormValues {
   current_hours: string;
   component_id: string;
   commissioned_date: string;
+  image_path: string | null;
   notes: string;
 }
 
@@ -153,6 +155,21 @@ export default function EquipmentForm({
       </div>
 
       <div>
+        <span className={labelClass}>Photo</span>
+        <p className="mt-0.5 text-xs text-slate-400">
+          A picture of the unit makes it easier to spot at a glance.
+        </p>
+        <div className="mt-2">
+          <PhotoCapture
+            value={values.image_path}
+            onChange={(next) => onChange({ image_path: next })}
+            bucket="equipment-photos"
+            alt="Equipment"
+          />
+        </div>
+      </div>
+
+      <div>
         <label htmlFor="notes" className={labelClass}>
           Notes
         </label>
@@ -177,6 +194,7 @@ export const emptyEquipmentForm: EquipmentFormValues = {
   current_hours: "",
   component_id: "",
   commissioned_date: "",
+  image_path: null,
   notes: "",
 };
 
@@ -190,6 +208,7 @@ export function equipmentValuesToBody(v: EquipmentFormValues) {
     current_hours: v.current_hours === "" ? null : Number(v.current_hours),
     component_id: v.component_id || null,
     commissioned_date: v.commissioned_date || null,
+    image_path: v.image_path,
     notes: v.notes.trim() || null,
   };
 }

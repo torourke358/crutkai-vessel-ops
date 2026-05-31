@@ -39,6 +39,16 @@ export default async function EquipmentDetailPage({
 
   if (!equipment) notFound();
 
+  // Sign the photo URL server-side (5-min TTL). Hero image is read-only here;
+  // edits go through the form below which handles its own signed preview.
+  let photoUrl: string | null = null;
+  if (equipment.image_path) {
+    const { data } = await supabase.storage
+      .from("equipment-photos")
+      .createSignedUrl(equipment.image_path, 300);
+    photoUrl = data?.signedUrl ?? null;
+  }
+
   // Resolve recorded_by names for the readings panel.
   const userIds = [...new Set((readings ?? []).map((r) => r.recorded_by).filter(Boolean) as string[])];
   const { data: profiles } = await supabase
@@ -59,6 +69,15 @@ export default async function EquipmentDetailPage({
           Back
         </Link>
       </div>
+
+      {photoUrl && (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={photoUrl}
+          alt={equipment.name}
+          className="w-full max-h-72 rounded-2xl object-cover ring-1 ring-slate-200"
+        />
+      )}
 
       {/* Quick stats */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">

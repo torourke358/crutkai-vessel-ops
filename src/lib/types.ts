@@ -48,6 +48,7 @@ export interface Equipment {
   current_hours: number | null;
   component_id: string | null;
   commissioned_date: string | null; // when the unit physically went into service
+  image_path: string | null;        // storage path under equipment-photos bucket
   notes: string | null;
   active: boolean;
   created_at: string;

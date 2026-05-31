@@ -4,18 +4,22 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { prepareImage } from "@/lib/image";
 
-// Photo widget for an inventory item's storage location. Uploads to the
-// `inventory-photos` bucket under {user_id}/{uuid}.jpg per the RLS policy.
+// Generic photo widget. Uploads to the given storage bucket under
+// {user_id}/{uuid}.jpg per the bucket's per-user-folder RLS policy.
 //
 // Controlled: `value` is the storage path; `onChange` is called with the
 // new path (or null on remove). Shows a signed-URL thumbnail when value
 // is set, plus take-photo / library / remove buttons.
-export default function InventoryPhotoCapture({
+export default function PhotoCapture({
   value,
   onChange,
+  bucket,
+  alt = "Photo",
 }: {
   value: string | null;
   onChange: (next: string | null) => void;
+  bucket: string;
+  alt?: string;
 }) {
   const supabase = createClient();
   const [busy, setBusy] = useState(false);
@@ -31,14 +35,14 @@ export default function InventoryPhotoCapture({
     }
     (async () => {
       const { data } = await supabase.storage
-        .from("inventory-photos")
+        .from(bucket)
         .createSignedUrl(value, 300);
       if (!cancelled) setSignedUrl(data?.signedUrl ?? null);
     })();
     return () => {
       cancelled = true;
     };
-  }, [value, supabase]);
+  }, [value, bucket, supabase]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   async function handleFile(file: File) {
@@ -55,7 +59,7 @@ export default function InventoryPhotoCapture({
       }
       const path = `${user.id}/${crypto.randomUUID()}.jpg`;
       const { error: upErr } = await supabase.storage
-        .from("inventory-photos")
+        .from(bucket)
         .upload(path, prepared, { contentType: "image/jpeg" });
       if (upErr) {
         setError(`Upload failed: ${upErr.message}`);
@@ -76,7 +80,7 @@ export default function InventoryPhotoCapture({
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={signedUrl}
-            alt="Location"
+            alt={alt}
             className="w-full max-h-72 rounded-2xl object-cover ring-1 ring-slate-200"
           />
           <button
