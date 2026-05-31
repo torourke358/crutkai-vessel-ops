@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
+import ExcelJS from "exceljs";
 import { createClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
 import { computeStatus, STATUS_LABELS } from "@/lib/inventory";
 
-// CSV export. All signed-in users can pull it — RLS still scopes the read,
-// and there's no sensitive PII here. Components are joined into a single
-// semicolon-separated string ("Hose; AC; Lights") since a row can carry up
-// to 8 of them.
+// Excel (.xlsx) export. All signed-in users can pull it — RLS still scopes
+// the read. Mirrors petty cash's xlsx style: bold + filled + frozen header,
+// auto-widths clamped, sentence-case header row. Components are joined into
+// a single semicolon-separated cell since a row can carry up to 8.
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -43,6 +44,15 @@ export async function GET() {
   }
 
   const nameById = new Map((comps ?? []).map((c) => [c.id, c.name] as const));
+  const data = rows ?? [];
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Thor · M/Y Anne-Marie";
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet("Inventory", {
+    views: [{ state: "frozen", ySplit: 1 }],
+  });
 
   const headers = [
     "Part name",
@@ -56,43 +66,63 @@ export async function GET() {
     "Status",
     "Notes",
   ];
+  ws.addRow(headers);
 
-  const lines: string[] = [headers.map(csvCell).join(",")];
-  for (const r of rows ?? []) {
+  // Track max content length per column for auto-width.
+  const widths = headers.map((h) => h.length);
+  const note = (i: number, v: unknown) => {
+    const len = v == null ? 0 : String(v).length;
+    if (len > widths[i]) widths[i] = len;
+  };
+
+  for (const r of data) {
     const status = computeStatus(r.quantity, r.critical_threshold);
     const componentNames = (r.component_ids ?? [])
       .map((id) => nameById.get(id))
       .filter(Boolean)
       .join("; ");
-    lines.push(
-      [
-        csvCell(r.part_name),
-        csvCell(r.part_number ?? ""),
-        csvCell(r.make ?? ""),
-        csvCell(r.quantity),
-        csvCell(r.unit),
-        csvCell(r.location ?? ""),
-        csvCell(componentNames),
-        csvCell(r.critical_threshold ?? ""),
-        csvCell(STATUS_LABELS[status]),
-        csvCell(r.notes ?? ""),
-      ].join(","),
-    );
+
+    const values: (string | number | null)[] = [
+      r.part_name,
+      r.part_number ?? "",
+      r.make ?? "",
+      r.quantity,
+      r.unit,
+      r.location ?? "",
+      componentNames,
+      r.critical_threshold ?? null,
+      STATUS_LABELS[status],
+      r.notes ?? "",
+    ];
+    const row = ws.addRow(values);
+    row.getCell(4).numFmt = "0";  // Quantity
+    row.getCell(8).numFmt = "0";  // Critical threshold
+
+    values.forEach((v, i) => note(i, v));
   }
 
-  return new NextResponse(lines.join("\n"), {
+  // Bold + slate-200 fill + frozen header row.
+  const headerRow = ws.getRow(1);
+  headerRow.font = { bold: true };
+  headerRow.fill = {
+    type: "pattern",
+    pattern: "solid",
+    fgColor: { argb: "FFE2E8F0" },
+  };
+
+  // Auto-widths, clamped so a long Notes cell doesn't blow out the sheet.
+  ws.columns.forEach((col, i) => {
+    col.width = Math.min(widths[i] + 2, i === 9 ? 60 : 30);
+  });
+
+  const buffer = await wb.xlsx.writeBuffer();
+
+  return new NextResponse(buffer as ArrayBuffer, {
     status: 200,
     headers: {
-      "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="inventory-${todayLocal()}.csv"`,
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename="inventory-${todayLocal()}.xlsx"`,
     },
   });
-}
-
-function csvCell(v: string | number): string {
-  const s = String(v);
-  if (s.includes(",") || s.includes("\n") || s.includes('"')) {
-    return `"${s.replace(/"/g, '""')}"`;
-  }
-  return s;
 }
