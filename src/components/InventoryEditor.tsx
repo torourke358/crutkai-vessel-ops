@@ -34,6 +34,10 @@ export default function InventoryEditor({
           location_photo_path: initial.location_photo_path ?? null,
           critical_threshold:
             initial.critical_threshold == null ? "" : String(initial.critical_threshold),
+          unit_price: initial.unit_price == null ? "" : String(initial.unit_price),
+          supplier: initial.supplier ?? "",
+          lead_time_days:
+            initial.lead_time_days == null ? "" : String(initial.lead_time_days),
           notes: initial.notes ?? "",
         }
       : emptyInventoryForm,

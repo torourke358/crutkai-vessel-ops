@@ -2,7 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { UserProfile, YardTask, YardTaskEffort } from "@/lib/types";
+import type {
+  UserProfile,
+  YardTask,
+  YardTaskEffort,
+  YardTaskUrgency,
+} from "@/lib/types";
+import { YARD_TASK_URGENCY_LABELS } from "@/lib/types";
 import OwnerWheel from "@/components/wheels/OwnerWheel";
 import ProgressWheel from "@/components/wheels/ProgressWheel";
 import EffortWheel from "@/components/wheels/EffortWheel";
@@ -71,6 +77,8 @@ export default function YardTaskDetailPanel({
               reminder_date: next.reminder_date,
               resources: next.resources,
               status: next.status,
+              urgency: next.urgency,
+              follower_ids: next.follower_ids,
             }),
           },
         );
@@ -141,6 +149,55 @@ export default function YardTaskDetailPanel({
             onChange={(next) => update("reminder_date", next)}
           />
         </Field>
+      </div>
+
+      {/* Urgency + followers */}
+      <div className="rounded-xl bg-slate-800 p-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          Urgency &amp; followers
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs text-slate-400">Urgency</label>
+            <select
+              value={draft.urgency ?? ""}
+              onChange={(e) =>
+                update("urgency", (e.target.value || null) as YardTaskUrgency | null)
+              }
+              className="mt-1 block w-full rounded-md bg-slate-900 px-2 py-1 text-sm text-slate-100"
+            >
+              <option value="">(unset)</option>
+              {(Object.entries(YARD_TASK_URGENCY_LABELS) as [
+                YardTaskUrgency,
+                string,
+              ][]).map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400">
+              Followers ({draft.follower_ids.length})
+            </label>
+            <select
+              multiple
+              value={draft.follower_ids}
+              onChange={(e) => {
+                const next = Array.from(e.target.selectedOptions, (o) => o.value);
+                update("follower_ids", next);
+              }}
+              className="mt-1 block h-20 w-full rounded-md bg-slate-900 px-2 py-1 text-xs text-slate-100"
+            >
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name ?? u.id}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* Dates row — no wheel */}

@@ -123,6 +123,9 @@ export default async function MaintenancePage({
               Apply
             </button>
           </form>
+          <Link href="/maintenance/calendar" className="font-medium text-slate-500 hover:text-violet-700">
+            Calendar
+          </Link>
           <Link href="/maintenance/tasks" className="font-medium text-slate-500 hover:text-violet-700">
             All tasks
           </Link>

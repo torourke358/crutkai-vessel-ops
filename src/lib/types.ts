@@ -30,10 +30,35 @@ export interface InventoryItem {
   component_ids: string[];           // up to 8 component refs (replaces related_component_id)
   location_photo_path: string | null; // storage path under inventory-photos bucket
   critical_threshold: number | null;
+  unit_price: number | null;         // USD per unit, for reorder math
+  supplier: string | null;
+  lead_time_days: number | null;
   notes: string | null;
   alert_state: "above" | "at_or_below";
   created_at: string;
   updated_at: string;
+}
+
+export type InventoryDocumentKind = "quotation" | "invoice" | "spec" | "image" | "other";
+export const INVENTORY_DOCUMENT_KIND_LABELS: Record<InventoryDocumentKind, string> = {
+  quotation: "Quotation",
+  invoice: "Invoice",
+  spec: "Spec / data sheet",
+  image: "Image",
+  other: "Other",
+};
+
+export interface InventoryDocument {
+  id: string;
+  inventory_item_id: string;
+  kind: InventoryDocumentKind;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  notes: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
 }
 
 export const MAX_INVENTORY_COMPONENTS = 8;
@@ -154,6 +179,14 @@ export interface YardQuadrant {
   created_at: string;
 }
 
+export type YardTaskUrgency = "fires" | "prioritize" | "reduce" | "repository";
+export const YARD_TASK_URGENCY_LABELS: Record<YardTaskUrgency, string> = {
+  fires: "Fires (urgent + important)",
+  prioritize: "Prioritize (important, not urgent)",
+  reduce: "Reduce (urgent, not important)",
+  repository: "Repository (neither)",
+};
+
 export interface YardTask {
   id: string;
   yard_period_id: string;
@@ -161,8 +194,10 @@ export interface YardTask {
   title: string;
   description: string | null; // used as the "Notes" field in the UI
   owner_id: string | null;
+  follower_ids: string[];     // additional users notified on changes
   progress_pct: number;
   effort: YardTaskEffort | null;
+  urgency: YardTaskUrgency | null;
   due_date: string | null;
   reminder_date: string | null;
   resources: string | null;
@@ -170,6 +205,123 @@ export interface YardTask {
   actual_cost: number | null;
   completed_at: string | null;
   completed_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface YardTaskComment {
+  id: string;
+  yard_task_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+}
+
+export interface YardTaskDocument {
+  id: string;
+  yard_task_id: string;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+}
+
+export type DefectStatus = "open" | "in_progress" | "resolved";
+export type DefectSeverity = "low" | "normal" | "high" | "critical";
+
+export const DEFECT_STATUS_LABELS: Record<DefectStatus, string> = {
+  open: "Open",
+  in_progress: "In progress",
+  resolved: "Resolved",
+};
+export const DEFECT_SEVERITY_LABELS: Record<DefectSeverity, string> = {
+  low: "Low",
+  normal: "Normal",
+  high: "High",
+  critical: "Critical",
+};
+
+export interface Defect {
+  id: string;
+  title: string;
+  description: string | null;
+  equipment_id: string | null;
+  reported_by: string | null;
+  assigned_to: string | null;
+  status: DefectStatus;
+  severity: DefectSeverity;
+  resolved_at: string | null;
+  resolved_by: string | null;
+  resolution: string | null;
+  image_path: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DefectComment {
+  id: string;
+  defect_id: string;
+  author_id: string | null;
+  body: string;
+  created_at: string;
+}
+
+export interface ChecklistTemplate {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChecklistTemplateItem {
+  id: string;
+  template_id: string;
+  display_order: number;
+  body: string;
+  required: boolean;
+}
+
+export interface ChecklistRun {
+  id: string;
+  template_id: string;
+  started_by: string | null;
+  started_at: string;
+  completed_at: string | null;
+  notes: string | null;
+}
+
+export interface ChecklistRunItem {
+  id: string;
+  run_id: string;
+  template_item_id: string;
+  checked: boolean;
+  checked_at: string | null;
+  checked_by: string | null;
+  note: string | null;
+}
+
+export type VesselLogCategory = "crossing" | "charter" | "guest" | "crew" | "other";
+export const VESSEL_LOG_CATEGORY_LABELS: Record<VesselLogCategory, string> = {
+  crossing: "Crossing",
+  charter: "Charter",
+  guest: "Guest arrival",
+  crew: "Crew",
+  other: "Other",
+};
+
+export interface VesselLog {
+  id: string;
+  log_date: string;
+  category: VesselLogCategory;
+  title: string;
+  body: string | null;
+  created_by: string | null;
   created_at: string;
   updated_at: string;
 }

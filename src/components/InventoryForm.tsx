@@ -14,6 +14,9 @@ export interface InventoryFormValues {
   component_ids: string[];
   location_photo_path: string | null;
   critical_threshold: string; // empty string = "no threshold"
+  unit_price: string;         // empty string = unset
+  supplier: string;
+  lead_time_days: string;
   notes: string;
 }
 
@@ -134,6 +137,54 @@ export default function InventoryForm({
         />
       </div>
 
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div>
+          <label htmlFor="unit_price" className={labelClass}>
+            Unit price (USD)
+          </label>
+          <input
+            id="unit_price"
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            placeholder="(unset)"
+            value={values.unit_price}
+            onChange={(e) => onChange({ unit_price: e.target.value })}
+            className={inputClass}
+          />
+        </div>
+        <div>
+          <label htmlFor="supplier" className={labelClass}>
+            Supplier
+          </label>
+          <input
+            id="supplier"
+            type="text"
+            value={values.supplier}
+            onChange={(e) => onChange({ supplier: e.target.value })}
+            className={inputClass}
+            placeholder="e.g. Northern Lights"
+          />
+        </div>
+        <div>
+          <label htmlFor="lead_time_days" className={labelClass}>
+            Lead time (days)
+          </label>
+          <input
+            id="lead_time_days"
+            type="number"
+            inputMode="numeric"
+            step="1"
+            min="0"
+            placeholder="(unknown)"
+            value={values.lead_time_days}
+            onChange={(e) => onChange({ lead_time_days: e.target.value })}
+            className={inputClass}
+          />
+        </div>
+      </div>
+
       <div>
         <span className={labelClass}>Location photo</span>
         <p className="mt-0.5 text-xs text-slate-400">
@@ -189,6 +240,9 @@ export const emptyInventoryForm: InventoryFormValues = {
   component_ids: [],
   location_photo_path: null,
   critical_threshold: "",
+  unit_price: "",
+  supplier: "",
+  lead_time_days: "",
   notes: "",
 };
 
@@ -204,6 +258,9 @@ export function formValuesToBody(v: InventoryFormValues) {
     component_ids: v.component_ids,
     location_photo_path: v.location_photo_path,
     critical_threshold: v.critical_threshold === "" ? null : Number(v.critical_threshold),
+    unit_price: v.unit_price === "" ? null : Number(v.unit_price),
+    supplier: v.supplier.trim() || null,
+    lead_time_days: v.lead_time_days === "" ? null : Number(v.lead_time_days),
     notes: v.notes.trim() || null,
   };
 }

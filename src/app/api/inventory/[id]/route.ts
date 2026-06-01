@@ -14,6 +14,9 @@ const patchSchema = z.object({
   component_ids: z.array(z.string().uuid()).max(8).optional(),
   location_photo_path: z.string().max(500).nullable().optional(),
   critical_threshold: z.number().int().min(0).nullable().optional(),
+  unit_price: z.number().min(0).nullable().optional(),
+  supplier: z.string().trim().max(200).nullable().optional(),
+  lead_time_days: z.number().int().min(0).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
 

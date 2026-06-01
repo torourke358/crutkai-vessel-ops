@@ -16,6 +16,8 @@ const patchSchema = z.object({
   resources: z.string().trim().max(4000).nullable().optional(),
   status: z.enum(["todo", "in_progress", "done"]).optional(),
   actual_cost: z.number().min(0).nullable().optional(),
+  urgency: z.enum(["fires", "prioritize", "reduce", "repository"]).nullable().optional(),
+  follower_ids: z.array(z.string().uuid()).max(10).optional(),
 });
 
 type Ctx = { params: Promise<{ id: string; taskId: string }> };
