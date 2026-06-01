@@ -5,9 +5,14 @@ import MaintenanceTaskEditor from "@/components/MaintenanceTaskEditor";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewMaintenanceTaskPage() {
+export default async function NewMaintenanceTaskPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ equipment?: string }>;
+}) {
   if ((await getUserRole()) !== "admin") redirect("/maintenance");
 
+  const { equipment: equipmentParam } = await searchParams;
   const supabase = await createClient();
   const [{ data: equipment }, { data: users }] = await Promise.all([
     supabase.from("equipment").select("id, name").eq("active", true).order("name"),
@@ -19,6 +24,7 @@ export default async function NewMaintenanceTaskPage() {
       initial={null}
       equipment={equipment ?? []}
       users={users ?? []}
+      defaultEquipmentId={equipmentParam ?? null}
     />
   );
 }

@@ -14,10 +14,12 @@ export default function MaintenanceTaskEditor({
   initial,
   equipment,
   users,
+  defaultEquipmentId = null,
 }: {
   initial: MaintenanceTask | null;
   equipment: Pick<Equipment, "id" | "name">[];
   users: Pick<UserProfile, "id" | "full_name">[];
+  defaultEquipmentId?: string | null;
 }) {
   const router = useRouter();
   const isEdit = initial != null;
@@ -36,7 +38,7 @@ export default function MaintenanceTaskEditor({
           hours_at_last_done: initial.hours_at_last_done != null ? String(initial.hours_at_last_done) : "",
           assigned_to: initial.assigned_to ?? "",
         }
-      : emptyTaskForm,
+      : { ...emptyTaskForm, equipment_id: defaultEquipmentId ?? "" },
   );
 
   const [saving, setSaving] = useState(false);

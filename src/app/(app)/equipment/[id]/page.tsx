@@ -4,8 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth";
 import EquipmentEditor from "@/components/EquipmentEditor";
 import HourReadingForm from "@/components/HourReadingForm";
-import { formatDate } from "@/lib/format";
-import type { Component, Equipment, EquipmentHourReading } from "@/lib/types";
+import { formatDate, todayLocal } from "@/lib/format";
+import { computeDueState } from "@/lib/maintenance";
+import type {
+  Component,
+  Equipment,
+  EquipmentHourReading,
+  MaintenanceTask,
+} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +26,12 @@ export default async function EquipmentDetailPage({
   // eslint-disable-next-line react-hooks/purity -- server component, evaluated per request
   const nowMs = Date.now();
 
-  const [{ data: equipment }, { data: components }, { data: readings }] = await Promise.all([
+  const [
+    { data: equipment },
+    { data: components },
+    { data: readings },
+    { data: tasks },
+  ] = await Promise.all([
     supabase.from("equipment").select().eq("id", id).single<Equipment>(),
     supabase
       .from("components")
@@ -35,9 +46,18 @@ export default async function EquipmentDetailPage({
       .order("recorded_at", { ascending: false })
       .limit(20)
       .returns<EquipmentHourReading[]>(),
+    supabase
+      .from("maintenance_tasks")
+      .select()
+      .eq("equipment_id", id)
+      .order("active", { ascending: false })
+      .order("title", { ascending: true })
+      .returns<MaintenanceTask[]>(),
   ]);
 
   if (!equipment) notFound();
+
+  const today = todayLocal();
 
   // Sign the photo URL server-side (5-min TTL). Hero image is read-only here;
   // edits go through the form below which handles its own signed preview.
@@ -169,6 +189,79 @@ export default async function EquipmentDetailPage({
             ))
           )}
         </ul>
+      </section>
+
+      {/* Maintenance tasks for this unit */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-900">
+            Maintenance tasks
+          </h2>
+          {role === "admin" && (
+            <Link
+              href={`/maintenance/tasks/new?equipment=${equipment.id}`}
+              className="text-sm font-medium text-violet-700 hover:underline"
+            >
+              + New PM
+            </Link>
+          )}
+        </div>
+        <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
+          {(tasks ?? []).length === 0 ? (
+            <li className="p-4 text-center text-sm text-slate-400">
+              No maintenance tasks yet.
+            </li>
+          ) : (
+            (tasks ?? []).map((t) => {
+              const due = t.active
+                ? computeDueState(t, equipment.current_hours, today)
+                : null;
+              const interval =
+                t.due_type === "calendar"
+                  ? t.interval_days
+                    ? `every ${t.interval_days} d`
+                    : "no interval"
+                  : t.interval_hours
+                    ? `every ${t.interval_hours} hrs`
+                    : "no interval";
+              const stateBadge =
+                due == null
+                  ? { label: "Inactive", cls: "bg-slate-100 text-slate-500" }
+                  : due.state === "overdue"
+                    ? { label: "Overdue", cls: "bg-rose-100 text-rose-700" }
+                    : due.state === "due"
+                      ? { label: "Due", cls: "bg-amber-100 text-amber-700" }
+                      : { label: "OK", cls: "bg-emerald-50 text-emerald-700" };
+              return (
+                <li key={t.id}>
+                  <Link
+                    href={`/maintenance/tasks/${t.id}`}
+                    className="flex items-start justify-between gap-3 p-3 hover:bg-slate-50"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {t.title}
+                      </p>
+                      <p className="truncate text-xs text-slate-400">
+                        {t.due_type === "calendar" ? "Calendar" : "Hours"} ·{" "}
+                        {interval}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${stateBadge.cls}`}
+                    >
+                      {stateBadge.label}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })
+          )}
+        </ul>
+        <p className="text-xs text-slate-400">
+          Tap a task to change its due type (hours ↔ calendar), interval, or
+          last-done date.
+        </p>
       </section>
 
       {/* Admin edit panel */}

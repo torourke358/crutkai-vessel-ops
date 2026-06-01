@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
 import { computeDueState } from "@/lib/maintenance";
 import type { YardPeriod } from "@/lib/types";
@@ -82,6 +82,22 @@ export default async function HomePage() {
     if (due.state === "due") dueToday++;
     else if (due.state === "overdue") overdue++;
     else maintenanceOk++;
+  }
+
+  // Auto-promote a planned period to active once its start_date arrives.
+  // Service-role client because RLS restricts yard_period writes to admins,
+  // and we want this to fire for any viewer who hits the dashboard.
+  if (
+    activePeriod &&
+    activePeriod.status === "planned" &&
+    activePeriod.start_date <= today
+  ) {
+    const admin = createServiceClient();
+    await admin
+      .from("yard_periods")
+      .update({ status: "active" })
+      .eq("id", activePeriod.id);
+    activePeriod.status = "active";
   }
 
   let yardTodo = 0;
