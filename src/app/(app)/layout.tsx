@@ -5,6 +5,7 @@ import { getUserRole } from "@/lib/auth";
 import SignOutButton from "@/components/SignOutButton";
 import NotificationBell from "@/components/NotificationBell";
 import NotificationBanner from "@/components/NotificationBanner";
+import InstallPrompt from "@/components/InstallPrompt";
 
 // Protected shell for every signed-in screen. Server component: redirects to
 // /login when there's no session (the proxy does this too, but this guards
@@ -44,6 +45,12 @@ export default async function AppLayout({
             href="/"
             className="flex items-center gap-2 font-semibold text-slate-900"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/icons/icon-192.png"
+              alt=""
+              className="h-8 w-8 rounded-lg object-cover"
+            />
             Thor
           </Link>
           <nav className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-500">
@@ -82,6 +89,7 @@ export default async function AppLayout({
         className="mx-auto w-full max-w-5xl flex-1 px-4 pt-5"
         style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}
       >
+        <InstallPrompt />
         {children}
       </main>
     </div>
