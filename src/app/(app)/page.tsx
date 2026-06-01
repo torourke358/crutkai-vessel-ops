@@ -14,6 +14,7 @@ export default async function HomePage() {
     userResult,
     { count: noStock },
     { count: critical },
+    { count: inventoryOk },
     { data: maintTasks },
     { data: activePeriod },
   ] = await Promise.all([
@@ -26,6 +27,11 @@ export default async function HomePage() {
       .from("inventory_items")
       .select("*", { count: "exact", head: true })
       .eq("alert_state", "at_or_below")
+      .gt("quantity", 0),
+    supabase
+      .from("inventory_items")
+      .select("*", { count: "exact", head: true })
+      .eq("alert_state", "above")
       .gt("quantity", 0),
     supabase
       .from("maintenance_tasks")
@@ -55,6 +61,7 @@ export default async function HomePage() {
 
   let dueToday = 0;
   let overdue = 0;
+  let maintenanceOk = 0;
   for (const t of maintTasks ?? []) {
     const due = computeDueState(
       {
@@ -69,6 +76,7 @@ export default async function HomePage() {
     );
     if (due.state === "due") dueToday++;
     else if (due.state === "overdue") overdue++;
+    else maintenanceOk++;
   }
 
   let yardTodo = 0;
@@ -136,6 +144,18 @@ export default async function HomePage() {
             <Stat label="Overdue" value={overdue} tone="rose" />
           </div>
         </Link>
+
+        {/* All clear — everything not flagged anywhere else */}
+        <div className="block rounded-2xl bg-white p-5 ring-1 ring-slate-100 sm:col-span-2">
+          <p className="text-base font-semibold text-slate-900">All clear</p>
+          <p className="mt-0.5 text-xs text-slate-400">
+            Items above critical and tasks comfortably out from due.
+          </p>
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Stat label="Inventory OK" value={inventoryOk ?? 0} tone="emerald" />
+            <Stat label="Maintenance OK" value={maintenanceOk} tone="emerald" />
+          </div>
+        </div>
 
         {/* Yard */}
         <Link
