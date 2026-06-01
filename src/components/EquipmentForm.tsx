@@ -1,7 +1,7 @@
 "use client";
 
 import type { Component } from "@/lib/types";
-import PhotoCapture from "@/components/PhotoCapture";
+import PhotoGallery from "@/components/PhotoGallery";
 
 export interface EquipmentFormValues {
   name: string;
@@ -12,7 +12,10 @@ export interface EquipmentFormValues {
   current_hours: string;
   component_id: string;
   commissioned_date: string;
-  image_path: string | null;
+  image_paths: string[];
+  critical: boolean;
+  is_ism: boolean;
+  is_isps: boolean;
   notes: string;
 }
 
@@ -155,16 +158,52 @@ export default function EquipmentForm({
       </div>
 
       <div>
-        <span className={labelClass}>Photo</span>
+        <span className={labelClass}>Classification</span>
         <p className="mt-0.5 text-xs text-slate-400">
-          A picture of the unit makes it easier to spot at a glance.
+          Mark the unit for engineering priority and survey scope.
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <label className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+            <input
+              type="checkbox"
+              checked={values.critical}
+              onChange={(e) => onChange({ critical: e.target.checked })}
+              className="h-4 w-4"
+            />
+            <span className="text-sm text-slate-700">Critical equipment</span>
+          </label>
+          <label className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+            <input
+              type="checkbox"
+              checked={values.is_ism}
+              onChange={(e) => onChange({ is_ism: e.target.checked })}
+              className="h-4 w-4"
+            />
+            <span className="text-sm text-slate-700">ISM</span>
+          </label>
+          <label className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
+            <input
+              type="checkbox"
+              checked={values.is_isps}
+              onChange={(e) => onChange({ is_isps: e.target.checked })}
+              className="h-4 w-4"
+            />
+            <span className="text-sm text-slate-700">ISPS</span>
+          </label>
+        </div>
+      </div>
+
+      <div>
+        <span className={labelClass}>Photos</span>
+        <p className="mt-0.5 text-xs text-slate-400">
+          The first photo is the hero. Star another to promote it. Useful
+          shots: full unit, nameplate, serial sticker, control panel.
         </p>
         <div className="mt-2">
-          <PhotoCapture
-            value={values.image_path}
-            onChange={(next) => onChange({ image_path: next })}
+          <PhotoGallery
+            values={values.image_paths}
+            onChange={(next) => onChange({ image_paths: next })}
             bucket="equipment-photos"
-            alt="Equipment"
           />
         </div>
       </div>
@@ -194,7 +233,10 @@ export const emptyEquipmentForm: EquipmentFormValues = {
   current_hours: "",
   component_id: "",
   commissioned_date: "",
-  image_path: null,
+  image_paths: [],
+  critical: false,
+  is_ism: false,
+  is_isps: false,
   notes: "",
 };
 
@@ -208,7 +250,10 @@ export function equipmentValuesToBody(v: EquipmentFormValues) {
     current_hours: v.current_hours === "" ? null : Number(v.current_hours),
     component_id: v.component_id || null,
     commissioned_date: v.commissioned_date || null,
-    image_path: v.image_path,
+    image_paths: v.image_paths,
+    critical: v.critical,
+    is_ism: v.is_ism,
+    is_isps: v.is_isps,
     notes: v.notes.trim() || null,
   };
 }

@@ -13,7 +13,10 @@ const bodySchema = z.object({
   current_hours: z.number().int().min(0).nullable().optional(),
   component_id: z.string().uuid().nullable().optional(),
   commissioned_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  image_path: z.string().trim().max(500).nullable().optional(),
+  image_paths: z.array(z.string().trim().max(500)).max(20).optional(),
+  critical: z.boolean().optional(),
+  is_ism: z.boolean().optional(),
+  is_isps: z.boolean().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
 
@@ -47,7 +50,10 @@ export async function POST(request: Request) {
       current_hours: b.current_hours ?? null,
       component_id: b.component_id ?? null,
       commissioned_date: b.commissioned_date ?? null,
-      image_path: b.image_path ?? null,
+      image_paths: b.image_paths ?? [],
+      critical: b.critical ?? false,
+      is_ism: b.is_ism ?? false,
+      is_isps: b.is_isps ?? false,
       notes: b.notes ?? null,
     })
     .select()

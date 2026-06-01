@@ -48,12 +48,44 @@ export interface Equipment {
   current_hours: number | null;
   component_id: string | null;
   commissioned_date: string | null; // when the unit physically went into service
-  image_path: string | null;        // storage path under equipment-photos bucket
+  image_path: string | null;        // legacy single hero photo (kept until app code drops it)
+  image_paths: string[];            // gallery of photo paths under equipment-photos
+  critical: boolean;
+  is_ism: boolean;                  // flag for ISM survey + compliance review
+  is_isps: boolean;                 // flag for ISPS survey + compliance review
   notes: string | null;
   active: boolean;
   created_at: string;
   updated_at: string;
 }
+
+export type EquipmentDocumentKind =
+  | "manual"
+  | "spec"
+  | "drawing"
+  | "service_report"
+  | "other";
+
+export interface EquipmentDocument {
+  id: string;
+  equipment_id: string;
+  kind: EquipmentDocumentKind;
+  file_name: string;
+  file_path: string;
+  file_size: number | null;
+  mime_type: string | null;
+  notes: string | null;
+  uploaded_by: string | null;
+  uploaded_at: string;
+}
+
+export const EQUIPMENT_DOCUMENT_KIND_LABELS: Record<EquipmentDocumentKind, string> = {
+  manual: "OEM manual",
+  spec: "Spec / data sheet",
+  drawing: "Drawing",
+  service_report: "Service report",
+  other: "Other",
+};
 
 export interface EquipmentHourReading {
   id: string;

@@ -16,6 +16,9 @@ interface RawRow {
   location_on_vessel: string | null;
   current_hours: number | null;
   active: boolean;
+  critical: boolean;
+  is_ism: boolean;
+  is_isps: boolean;
   component_id: string | null;
   component: { name: string } | null;
 }
@@ -38,7 +41,7 @@ export default async function EquipmentPage() {
     supabase
       .from("equipment")
       .select(
-        "id, name, make, model, location_on_vessel, current_hours, active, component_id, component:components(name)",
+        "id, name, make, model, location_on_vessel, current_hours, active, critical, is_ism, is_isps, component_id, component:components(name)",
       )
       .order("name", { ascending: true })
       .returns<RawRow[]>(),
@@ -92,6 +95,9 @@ export default async function EquipmentPage() {
       componentId: r.component_id,
       componentName: r.component?.name ?? null,
       active: r.active,
+      critical: r.critical,
+      is_ism: r.is_ism,
+      is_isps: r.is_isps,
       pmState,
       taskCount: ts.length,
     };

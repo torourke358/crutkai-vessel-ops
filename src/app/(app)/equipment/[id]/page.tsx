@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth";
 import EquipmentEditor from "@/components/EquipmentEditor";
+import EquipmentDocuments from "@/components/EquipmentDocuments";
 import HourReadingForm from "@/components/HourReadingForm";
 import { formatDate, todayLocal } from "@/lib/format";
 import { computeDueState } from "@/lib/maintenance";
 import type {
   Component,
   Equipment,
+  EquipmentDocument,
   EquipmentHourReading,
   MaintenanceTask,
 } from "@/lib/types";
@@ -31,6 +33,7 @@ export default async function EquipmentDetailPage({
     { data: components },
     { data: readings },
     { data: tasks },
+    { data: documents },
   ] = await Promise.all([
     supabase.from("equipment").select().eq("id", id).single<Equipment>(),
     supabase
@@ -53,21 +56,36 @@ export default async function EquipmentDetailPage({
       .order("active", { ascending: false })
       .order("title", { ascending: true })
       .returns<MaintenanceTask[]>(),
+    supabase
+      .from("equipment_documents")
+      .select()
+      .eq("equipment_id", id)
+      .order("uploaded_at", { ascending: false })
+      .returns<EquipmentDocument[]>(),
   ]);
 
   if (!equipment) notFound();
 
   const today = todayLocal();
 
-  // Sign the photo URL server-side (5-min TTL). Hero image is read-only here;
-  // edits go through the form below which handles its own signed preview.
-  let photoUrl: string | null = null;
-  if (equipment.image_path) {
+  // Build the photo strip: first photo is the hero, the rest render as
+  // thumbnails. Falls back to the legacy single image_path for rows that
+  // haven't been migrated to image_paths yet.
+  const photoPaths =
+    equipment.image_paths && equipment.image_paths.length > 0
+      ? equipment.image_paths
+      : equipment.image_path
+        ? [equipment.image_path]
+        : [];
+  const signedPhotos: { path: string; url: string }[] = [];
+  for (const p of photoPaths) {
     const { data } = await supabase.storage
       .from("equipment-photos")
-      .createSignedUrl(equipment.image_path, 300);
-    photoUrl = data?.signedUrl ?? null;
+      .createSignedUrl(p, 300);
+    if (data?.signedUrl) signedPhotos.push({ path: p, url: data.signedUrl });
   }
+  const hero = signedPhotos[0] ?? null;
+  const thumbs = signedPhotos.slice(1);
 
   // Resolve recorded_by names for the readings panel.
   const userIds = [...new Set((readings ?? []).map((r) => r.recorded_by).filter(Boolean) as string[])];
@@ -81,22 +99,56 @@ export default async function EquipmentDetailPage({
 
   return (
     <div className="space-y-6 pb-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-slate-900">
-          {equipment.name}
-        </h1>
-        <Link href="/equipment" className="text-sm text-slate-500">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg font-semibold text-slate-900">
+            {equipment.name}
+          </h1>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {equipment.critical && (
+              <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-rose-700">
+                Critical
+              </span>
+            )}
+            {equipment.is_ism && (
+              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-700">
+                ISM
+              </span>
+            )}
+            {equipment.is_isps && (
+              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-sky-700">
+                ISPS
+              </span>
+            )}
+          </div>
+        </div>
+        <Link href="/equipment" className="shrink-0 text-sm text-slate-500">
           Back
         </Link>
       </div>
 
-      {photoUrl && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={photoUrl}
-          alt={equipment.name}
-          className="w-full max-h-72 rounded-2xl object-cover ring-1 ring-slate-200"
-        />
+      {hero && (
+        <div className="space-y-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={hero.url}
+            alt={equipment.name}
+            className="w-full max-h-72 rounded-2xl object-cover ring-1 ring-slate-200"
+          />
+          {thumbs.length > 0 && (
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+              {thumbs.map((t) => (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  key={t.path}
+                  src={t.url}
+                  alt=""
+                  className="aspect-square w-full rounded-lg object-cover ring-1 ring-slate-200"
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {/* Quick stats */}
@@ -262,6 +314,16 @@ export default async function EquipmentDetailPage({
           Tap a task to change its due type (hours ↔ calendar), interval, or
           last-done date.
         </p>
+      </section>
+
+      {/* Documents */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-900">Documents</h2>
+        <EquipmentDocuments
+          equipmentId={equipment.id}
+          initial={documents ?? []}
+          isAdmin={role === "admin"}
+        />
       </section>
 
       {/* Admin edit panel */}

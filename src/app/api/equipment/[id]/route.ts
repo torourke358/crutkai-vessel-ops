@@ -13,7 +13,10 @@ const patchSchema = z.object({
   current_hours: z.number().int().min(0).nullable().optional(),
   component_id: z.string().uuid().nullable().optional(),
   commissioned_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
-  image_path: z.string().trim().max(500).nullable().optional(),
+  image_paths: z.array(z.string().trim().max(500)).max(20).optional(),
+  critical: z.boolean().optional(),
+  is_ism: z.boolean().optional(),
+  is_isps: z.boolean().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   active: z.boolean().optional(),
 });

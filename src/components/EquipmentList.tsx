@@ -16,6 +16,9 @@ export interface EquipmentRow {
   componentId: string | null;
   componentName: string | null;
   active: boolean;
+  critical: boolean;
+  is_ism: boolean;
+  is_isps: boolean;
   // Worst-case PM state across this unit's active maintenance tasks.
   // "none" means no PMs are scheduled at all.
   pmState: EquipmentPmState;
@@ -181,6 +184,25 @@ export default function EquipmentList({
                             <p className="truncate text-xs text-slate-400">
                               {r.location_on_vessel}
                             </p>
+                          )}
+                          {(r.critical || r.is_ism || r.is_isps) && (
+                            <div className="mt-1 flex flex-wrap gap-1">
+                              {r.critical && (
+                                <span className="rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-medium uppercase text-rose-700">
+                                  Critical
+                                </span>
+                              )}
+                              {r.is_ism && (
+                                <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-medium uppercase text-violet-700">
+                                  ISM
+                                </span>
+                              )}
+                              {r.is_isps && (
+                                <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-[9px] font-medium uppercase text-sky-700">
+                                  ISPS
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                         <div className="flex flex-col items-end gap-1 text-right">
