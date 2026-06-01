@@ -19,6 +19,8 @@ interface RawRow {
   critical: boolean;
   is_ism: boolean;
   is_isps: boolean;
+  ga_x: number | null;
+  ga_y: number | null;
   component_id: string | null;
   component: { name: string } | null;
 }
@@ -41,7 +43,7 @@ export default async function EquipmentPage() {
     supabase
       .from("equipment")
       .select(
-        "id, name, make, model, location_on_vessel, current_hours, active, critical, is_ism, is_isps, component_id, component:components(name)",
+        "id, name, make, model, location_on_vessel, current_hours, active, critical, is_ism, is_isps, ga_x, ga_y, component_id, component:components(name)",
       )
       .order("name", { ascending: true })
       .returns<RawRow[]>(),
@@ -103,17 +105,18 @@ export default async function EquipmentPage() {
     };
   });
 
+  // Pinned units for the GA panel. Only active equipment with both
+  // coordinates set; rose for Critical, violet otherwise.
+  const pinned = (rows ?? []).filter(
+    (r) => r.active && r.ga_x != null && r.ga_y != null,
+  );
+  const totalActive = (rows ?? []).filter((r) => r.active).length;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Equipment</h1>
         <div className="flex items-center gap-3 text-sm">
-          <Link
-            href="/equipment/ga"
-            className="font-medium text-slate-500 hover:text-violet-700"
-          >
-            GA view
-          </Link>
           <Link
             href="/equipment/log"
             className="font-medium text-slate-500 hover:text-violet-700"
@@ -130,6 +133,48 @@ export default async function EquipmentPage() {
           )}
         </div>
       </div>
+
+      {/* Vessel schematic with pinned equipment. Server-rendered so the
+          dots show up without a client roundtrip. */}
+      <section className="space-y-1">
+        <div
+          className="relative overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100"
+          style={{ aspectRatio: "1000 / 520" }}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/ga-schematic.svg"
+            alt="Anne-Marie GA"
+            className="block h-full w-full select-none"
+            draggable={false}
+          />
+          {pinned.map((r) => (
+            <Link
+              key={r.id}
+              href={`/equipment/${r.id}`}
+              className="group absolute -translate-x-1/2 -translate-y-1/2"
+              style={{ left: `${r.ga_x}%`, top: `${r.ga_y}%` }}
+              aria-label={r.name}
+            >
+              <span
+                className={`block h-3 w-3 rounded-full ring-2 ring-white shadow ${
+                  r.critical ? "bg-rose-600" : "bg-violet-600"
+                }`}
+              />
+              <span className="pointer-events-none absolute left-1/2 top-full mt-1 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-0.5 text-[10px] font-medium text-white opacity-0 transition-opacity group-hover:opacity-100">
+                {r.name}
+              </span>
+            </Link>
+          ))}
+        </div>
+        <p className="text-xs text-slate-400">
+          {pinned.length} of {totalActive} active units pinned ·{" "}
+          <span className="text-rose-700">Critical</span> /{" "}
+          <span className="text-violet-700">Non-critical</span> · Pin a unit
+          via the &quot;Pin on GA&quot; widget on its edit form.
+        </p>
+      </section>
+
       <EquipmentList rows={eqRows} components={components ?? []} />
     </div>
   );
