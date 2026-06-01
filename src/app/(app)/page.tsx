@@ -50,10 +50,15 @@ export default async function HomePage() {
           equipment: { current_hours: number | null } | null;
         }[]
       >(),
+    // Prefer an active period; fall back to the most recent planned one so a
+    // period created with status='planned' (the default) still shows up
+    // before someone manually promotes it. 'active' < 'planned' alphabetically
+    // so ascending status puts active first.
     supabase
       .from("yard_periods")
       .select()
-      .eq("status", "active")
+      .in("status", ["active", "planned"])
+      .order("status", { ascending: true })
       .order("start_date", { ascending: false })
       .limit(1)
       .maybeSingle<YardPeriod>(),
@@ -162,10 +167,23 @@ export default async function HomePage() {
           href={activePeriod ? `/yard/${activePeriod.id}` : "/yard"}
           className="block rounded-2xl bg-white p-5 ring-1 ring-slate-100 transition-shadow hover:shadow-sm sm:col-span-2"
         >
-          <div className="flex items-center justify-between">
-            <p className="text-base font-semibold text-slate-900">
-              Active yard period
-            </p>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <p className="text-base font-semibold text-slate-900">
+                Yard period
+              </p>
+              {activePeriod && (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${
+                    activePeriod.status === "active"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {activePeriod.status === "active" ? "Active" : "Planned"}
+                </span>
+              )}
+            </div>
             {activePeriod && <p className="text-sm text-slate-500">{activePeriod.name}</p>}
           </div>
           {activePeriod ? (
@@ -176,7 +194,7 @@ export default async function HomePage() {
             </div>
           ) : (
             <p className="mt-2 text-sm text-slate-500">
-              No active yard period. Plan or activate one to see status here.
+              No active or planned yard period. Plan one to see status here.
             </p>
           )}
         </Link>
