@@ -40,6 +40,8 @@ export default function EquipmentEditor({
           critical: initial.critical ?? false,
           is_ism: initial.is_ism ?? false,
           is_isps: initial.is_isps ?? false,
+          ga_x: initial.ga_x ?? null,
+          ga_y: initial.ga_y ?? null,
           notes: initial.notes ?? "",
         }
       : emptyEquipmentForm,

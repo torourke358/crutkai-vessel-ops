@@ -2,6 +2,7 @@
 
 import type { Component } from "@/lib/types";
 import PhotoGallery from "@/components/PhotoGallery";
+import GaPinPicker from "@/components/GaPinPicker";
 
 export interface EquipmentFormValues {
   name: string;
@@ -16,6 +17,8 @@ export interface EquipmentFormValues {
   critical: boolean;
   is_ism: boolean;
   is_isps: boolean;
+  ga_x: number | null;
+  ga_y: number | null;
   notes: string;
 }
 
@@ -194,6 +197,20 @@ export default function EquipmentForm({
       </div>
 
       <div>
+        <span className={labelClass}>Pin on GA</span>
+        <p className="mt-0.5 text-xs text-slate-400">
+          Tap the spot on the vessel schematic where this unit lives. Used by
+          the GA view so anyone can see at a glance what equipment is where.
+        </p>
+        <div className="mt-2">
+          <GaPinPicker
+            value={{ x: values.ga_x, y: values.ga_y }}
+            onChange={(next) => onChange({ ga_x: next.x, ga_y: next.y })}
+          />
+        </div>
+      </div>
+
+      <div>
         <span className={labelClass}>Photos</span>
         <p className="mt-0.5 text-xs text-slate-400">
           The first photo is the hero. Star another to promote it. Useful
@@ -237,6 +254,8 @@ export const emptyEquipmentForm: EquipmentFormValues = {
   critical: false,
   is_ism: false,
   is_isps: false,
+  ga_x: null,
+  ga_y: null,
   notes: "",
 };
 
@@ -254,6 +273,8 @@ export function equipmentValuesToBody(v: EquipmentFormValues) {
     critical: v.critical,
     is_ism: v.is_ism,
     is_isps: v.is_isps,
+    ga_x: v.ga_x,
+    ga_y: v.ga_y,
     notes: v.notes.trim() || null,
   };
 }

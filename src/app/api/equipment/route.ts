@@ -17,6 +17,8 @@ const bodySchema = z.object({
   critical: z.boolean().optional(),
   is_ism: z.boolean().optional(),
   is_isps: z.boolean().optional(),
+  ga_x: z.number().min(0).max(100).nullable().optional(),
+  ga_y: z.number().min(0).max(100).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
 
@@ -54,6 +56,8 @@ export async function POST(request: Request) {
       critical: b.critical ?? false,
       is_ism: b.is_ism ?? false,
       is_isps: b.is_isps ?? false,
+      ga_x: b.ga_x ?? null,
+      ga_y: b.ga_y ?? null,
       notes: b.notes ?? null,
     })
     .select()

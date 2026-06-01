@@ -53,6 +53,8 @@ export interface Equipment {
   critical: boolean;
   is_ism: boolean;                  // flag for ISM survey + compliance review
   is_isps: boolean;                 // flag for ISPS survey + compliance review
+  ga_x: number | null;              // pin position on /public/ga-schematic.svg (0..100 % of width)
+  ga_y: number | null;              // pin position (0..100 % of height)
   notes: string | null;
   active: boolean;
   created_at: string;

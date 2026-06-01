@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 520" preserveAspectRatio="xMidYMid meet">
+  <!--
+    Anne-Marie GA — schematic side profile. Generic Burger-style 107' tri-deck
+    motor yacht. Approximate proportions only; replace with a real GA when
+    Craig provides one. Used as the canvas for equipment pin placement on
+    /ga. All shapes built with simple paths so the file is editable by hand
+    and renders crisply at any size.
+  -->
+  <defs>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#cfe7f5" />
+      <stop offset="100%" stop-color="#9ec9e0" />
+    </linearGradient>
+    <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1f2937" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="superstructure" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e2e8f0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Backdrop -->
+  <rect x="0" y="0" width="1000" height="520" fill="#f8fafc" />
+
+  <!-- Title -->
+  <text x="500" y="30" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="16" font-weight="600" fill="#0f172a">
+    M/Y Anne-Marie — General Arrangement (Schematic)
+  </text>
+  <text x="500" y="48" text-anchor="middle" font-family="ui-sans-serif, system-ui" font-size="11" fill="#64748b">
+    107' Burger Custom · twin MTU 12V 2000 M90 · Northern Lights gensets
+  </text>
+
+  <!-- Waterline reference -->
+  <line x1="60" y1="380" x2="940" y2="380" stroke="#94a3b8" stroke-dasharray="4 4" />
+  <text x="945" y="383" font-family="ui-sans-serif, system-ui" font-size="9" fill="#64748b">WL</text>
+
+  <!-- Water -->
+  <rect x="0" y="380" width="1000" height="140" fill="url(#water)" opacity="0.55" />
+
+  <!-- Hull (waterline up + below the WL) -->
+  <path d="M 110 410
+           C 130 420, 180 425, 220 425
+           L 820 425
+           C 870 425, 905 412, 910 395
+           L 910 350
+           L 120 350
+           Z"
+        fill="url(#hull)" />
+
+  <!-- Sheer line + foredeck cap -->
+  <path d="M 120 350
+           C 140 320, 175 305, 220 300
+           L 820 300
+           C 860 300, 895 315, 910 350 Z"
+        fill="#e2e8f0" />
+
+  <!-- Main deck / saloon block -->
+  <rect x="225" y="240" width="615" height="60" fill="url(#superstructure)" stroke="#cbd5e1" />
+
+  <!-- Pilothouse / upper saloon block -->
+  <rect x="330" y="180" width="430" height="60" fill="url(#superstructure)" stroke="#cbd5e1" />
+
+  <!-- Flybridge -->
+  <rect x="400" y="120" width="270" height="60" fill="url(#superstructure)" stroke="#cbd5e1" />
+
+  <!-- Mast / radar arch -->
+  <rect x="520" y="70" width="20" height="50" fill="#475569" />
+  <circle cx="530" cy="68" r="6" fill="#475569" />
+  <line x1="530" y1="72" x2="530" y2="60" stroke="#475569" stroke-width="2" />
+
+  <!-- Windows on each deck — simple slits -->
+  <g fill="#0ea5e9" opacity="0.55">
+    <!-- Main deck windows -->
+    <rect x="280" y="255" width="35" height="20" rx="3" />
+    <rect x="325" y="255" width="35" height="20" rx="3" />
+    <rect x="370" y="255" width="35" height="20" rx="3" />
+    <rect x="415" y="255" width="35" height="20" rx="3" />
+    <rect x="600" y="255" width="35" height="20" rx="3" />
+    <rect x="645" y="255" width="35" height="20" rx="3" />
+    <rect x="690" y="255" width="35" height="20" rx="3" />
+    <rect x="735" y="255" width="35" height="20" rx="3" />
+
+    <!-- Upper deck windows -->
+    <rect x="360" y="195" width="35" height="20" rx="3" />
+    <rect x="405" y="195" width="35" height="20" rx="3" />
+    <rect x="600" y="195" width="35" height="20" rx="3" />
+    <rect x="645" y="195" width="35" height="20" rx="3" />
+    <rect x="690" y="195" width="35" height="20" rx="3" />
+
+    <!-- Hull portholes (cabins below the saloon) -->
+    <circle cx="260" cy="335" r="6" />
+    <circle cx="305" cy="335" r="6" />
+    <circle cx="350" cy="335" r="6" />
+    <circle cx="395" cy="335" r="6" />
+    <circle cx="440" cy="335" r="6" />
+    <circle cx="640" cy="335" r="6" />
+    <circle cx="685" cy="335" r="6" />
+    <circle cx="730" cy="335" r="6" />
+    <circle cx="775" cy="335" r="6" />
+  </g>
+
+  <!-- Aft deck rail -->
+  <line x1="800" y1="295" x2="855" y2="295" stroke="#64748b" stroke-width="1.5" />
+  <line x1="800" y1="290" x2="800" y2="300" stroke="#64748b" stroke-width="1.5" />
+  <line x1="855" y1="290" x2="855" y2="300" stroke="#64748b" stroke-width="1.5" />
+
+  <!-- Swim platform -->
+  <rect x="850" y="350" width="65" height="14" fill="#94a3b8" />
+
+  <!-- Zone labels (engine room is the one most often pinned) -->
+  <g font-family="ui-sans-serif, system-ui" font-size="10" fill="#0f172a">
+    <text x="160" y="345" text-anchor="middle" font-weight="600">Bow</text>
+    <text x="220" y="345" text-anchor="middle">Anchor / Windlass</text>
+    <text x="300" y="345" text-anchor="middle">VIP</text>
+    <text x="400" y="345" text-anchor="middle">Master Stateroom</text>
+    <text x="530" y="345" text-anchor="middle" font-weight="600" fill="#b91c1c">Engine Room</text>
+    <text x="680" y="345" text-anchor="middle">Guest Cabins</text>
+    <text x="800" y="345" text-anchor="middle">Lazarette</text>
+    <text x="880" y="345" text-anchor="middle">Aft Deck</text>
+
+    <text x="530" y="275" text-anchor="middle">Main Saloon · Galley · Dining</text>
+    <text x="530" y="215" text-anchor="middle">Sky Lounge · Pilot House</text>
+    <text x="535" y="155" text-anchor="middle">Flybridge</text>
+  </g>
+
+  <!-- Engine room dashed outline so it's easy to pin to -->
+  <rect x="480" y="305" width="105" height="65" fill="none" stroke="#b91c1c" stroke-dasharray="4 3" />
+
+  <!-- Compass rose -->
+  <g transform="translate(85,470)" font-family="ui-sans-serif, system-ui">
+    <circle cx="0" cy="0" r="22" fill="white" stroke="#94a3b8" />
+    <text x="0" y="-10" text-anchor="middle" font-size="9" fill="#64748b">BOW</text>
+    <text x="0" y="14" text-anchor="middle" font-size="9" fill="#64748b">STERN</text>
+    <path d="M -16 0 L 16 0" stroke="#cbd5e1" />
+    <path d="M 0 -16 L 0 16" stroke="#cbd5e1" />
+    <path d="M 0 -16 L -4 -6 L 4 -6 Z" fill="#0f172a" />
+  </g>
+
+  <!-- Scale -->
+  <g transform="translate(820,470)" font-family="ui-sans-serif, system-ui" font-size="9" fill="#64748b">
+    <line x1="0" y1="0" x2="100" y2="0" stroke="#64748b" stroke-width="2" />
+    <line x1="0" y1="-3" x2="0" y2="3" stroke="#64748b" stroke-width="2" />
+    <line x1="100" y1="-3" x2="100" y2="3" stroke="#64748b" stroke-width="2" />
+    <text x="50" y="15" text-anchor="middle">~50 ft</text>
+  </g>
+</svg>

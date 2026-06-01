@@ -109,6 +109,12 @@ export default async function EquipmentPage() {
         <h1 className="text-lg font-semibold text-slate-900">Equipment</h1>
         <div className="flex items-center gap-3 text-sm">
           <Link
+            href="/equipment/ga"
+            className="font-medium text-slate-500 hover:text-violet-700"
+          >
+            GA view
+          </Link>
+          <Link
             href="/equipment/log"
             className="font-medium text-slate-500 hover:text-violet-700"
           >

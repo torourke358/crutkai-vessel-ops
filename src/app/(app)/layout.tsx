@@ -61,9 +61,14 @@ export default async function AppLayout({
             </Link>
             <NotificationBell />
             {role === "admin" && (
-              <Link href="/admin/audit" className="hover:text-violet-700">
-                Audit
-              </Link>
+              <>
+                <Link href="/admin/components" className="hover:text-violet-700">
+                  Systems
+                </Link>
+                <Link href="/admin/audit" className="hover:text-violet-700">
+                  Audit
+                </Link>
+              </>
             )}
             <Link href="/account/password" className="hover:text-violet-700">
               Password

@@ -17,6 +17,8 @@ const patchSchema = z.object({
   critical: z.boolean().optional(),
   is_ism: z.boolean().optional(),
   is_isps: z.boolean().optional(),
+  ga_x: z.number().min(0).max(100).nullable().optional(),
+  ga_y: z.number().min(0).max(100).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   active: z.boolean().optional(),
 });
