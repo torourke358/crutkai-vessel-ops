@@ -236,7 +236,7 @@ export default function YardTaskDetailPanel({
             >
               <option value="todo">To do</option>
               <option value="in_progress">In progress</option>
-              <option value="done">Done</option>
+              <option value="done">Completed</option>
             </select>
           </div>
         </div>
