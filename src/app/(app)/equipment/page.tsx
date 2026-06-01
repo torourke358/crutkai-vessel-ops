@@ -4,7 +4,7 @@ import { getUserRole } from "@/lib/auth";
 import { todayLocal } from "@/lib/format";
 import { computeDueState, isDueSoon } from "@/lib/maintenance";
 import EquipmentList, { type EquipmentRow } from "@/components/EquipmentList";
-import type { Component, DueType } from "@/lib/types";
+import type { Component, DueType, VesselZone } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,7 @@ interface RawRow {
   ga_x: number | null;
   ga_y: number | null;
   component_id: string | null;
+  zone_id: string | null;
   component: { name: string } | null;
 }
 
@@ -39,11 +40,16 @@ export default async function EquipmentPage() {
   const role = await getUserRole();
   const today = todayLocal();
 
-  const [{ data: rows }, { data: components }, { data: tasks }] = await Promise.all([
+  const [
+    { data: rows },
+    { data: components },
+    { data: zones },
+    { data: tasks },
+  ] = await Promise.all([
     supabase
       .from("equipment")
       .select(
-        "id, name, make, model, location_on_vessel, current_hours, active, critical, is_ism, is_isps, ga_x, ga_y, component_id, component:components(name)",
+        "id, name, make, model, location_on_vessel, current_hours, active, critical, is_ism, is_isps, ga_x, ga_y, component_id, zone_id, component:components(name)",
       )
       .order("name", { ascending: true })
       .returns<RawRow[]>(),
@@ -53,6 +59,12 @@ export default async function EquipmentPage() {
       .eq("active", true)
       .order("display_order")
       .returns<Component[]>(),
+    supabase
+      .from("vessel_zones")
+      .select()
+      .eq("active", true)
+      .order("display_order")
+      .returns<VesselZone[]>(),
     supabase
       .from("maintenance_tasks")
       .select(
@@ -111,6 +123,21 @@ export default async function EquipmentPage() {
     (r) => r.active && r.ga_x != null && r.ga_y != null,
   );
   const totalActive = (rows ?? []).filter((r) => r.active).length;
+
+  // Group active equipment by zone for the box grid below the schematic.
+  // Equipment without a zone falls into a synthetic "Unassigned" bucket.
+  const byZone = new Map<string | "unassigned", RawRow[]>();
+  for (const r of rows ?? []) {
+    if (!r.active) continue;
+    const key = r.zone_id ?? "unassigned";
+    const arr = byZone.get(key) ?? [];
+    arr.push(r);
+    byZone.set(key, arr);
+  }
+  const zoneCards = (zones ?? [])
+    .map((z) => ({ zone: z, items: byZone.get(z.id) ?? [] }))
+    .filter(({ items }) => items.length > 0);
+  const unassigned = byZone.get("unassigned") ?? [];
 
   return (
     <div className="space-y-4">
@@ -175,7 +202,85 @@ export default async function EquipmentPage() {
         </p>
       </section>
 
+      {/* Zone cards — equipment grouped by physical part of the ship. Each
+          zone is a small card with its name as the header and its equipment
+          listed inside. Tap any row to open the unit's detail page. */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-900">By zone</h2>
+        {zoneCards.length === 0 && unassigned.length === 0 ? (
+          <p className="rounded-2xl bg-white p-4 text-center text-sm text-slate-400 ring-1 ring-slate-100">
+            No equipment is assigned to a zone yet. Edit a unit and pick its
+            zone from the Zone dropdown.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {zoneCards.map(({ zone, items }) => (
+              <ZoneCard key={zone.id} title={zone.name} items={items} />
+            ))}
+            {unassigned.length > 0 && (
+              <ZoneCard
+                key="unassigned"
+                title="Unassigned"
+                items={unassigned}
+                muted
+              />
+            )}
+          </div>
+        )}
+      </section>
+
       <EquipmentList rows={eqRows} components={components ?? []} />
     </div>
+  );
+}
+
+function ZoneCard({
+  title,
+  items,
+  muted = false,
+}: {
+  title: string;
+  items: RawRow[];
+  muted?: boolean;
+}) {
+  return (
+    <section
+      className={`overflow-hidden rounded-2xl ring-1 ${
+        muted
+          ? "bg-slate-50 ring-slate-100"
+          : "bg-white ring-slate-100"
+      }`}
+    >
+      <header className="flex items-center justify-between border-b border-slate-100 bg-slate-50 px-3 py-1.5">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+          {title}
+        </h3>
+        <span className="text-xs tabular-nums text-slate-400">{items.length}</span>
+      </header>
+      <ul className="divide-y divide-slate-100">
+        {items.map((r) => (
+          <li key={r.id}>
+            <Link
+              href={`/equipment/${r.id}`}
+              className="flex items-center justify-between gap-2 px-3 py-1.5 text-sm hover:bg-slate-50"
+            >
+              <span className="min-w-0 flex-1 truncate text-slate-900">
+                {r.name}
+                {r.critical && (
+                  <span className="ml-1 rounded-full bg-rose-100 px-1.5 py-0.5 text-[9px] font-medium uppercase text-rose-700">
+                    Crit
+                  </span>
+                )}
+              </span>
+              {r.current_hours != null && (
+                <span className="shrink-0 text-xs tabular-nums text-slate-400">
+                  {r.current_hours} hrs
+                </span>
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

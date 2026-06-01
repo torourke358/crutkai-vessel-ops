@@ -13,6 +13,7 @@ import type {
   EquipmentDocument,
   EquipmentHourReading,
   MaintenanceTask,
+  VesselZone,
 } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -31,6 +32,7 @@ export default async function EquipmentDetailPage({
   const [
     { data: equipment },
     { data: components },
+    { data: zones },
     { data: readings },
     { data: tasks },
     { data: documents },
@@ -42,6 +44,12 @@ export default async function EquipmentDetailPage({
       .eq("active", true)
       .order("display_order")
       .returns<Component[]>(),
+    supabase
+      .from("vessel_zones")
+      .select()
+      .eq("active", true)
+      .order("display_order")
+      .returns<VesselZone[]>(),
     supabase
       .from("equipment_hour_readings")
       .select("id, equipment_id, hours, recorded_by, recorded_at, source")
@@ -332,7 +340,11 @@ export default async function EquipmentDetailPage({
           <h2 className="text-sm font-semibold text-slate-900">
             Edit details
           </h2>
-          <EquipmentEditor initial={equipment} components={components ?? []} />
+          <EquipmentEditor
+            initial={equipment}
+            components={components ?? []}
+            zones={zones ?? []}
+          />
         </section>
       ) : (
         <section className="space-y-2">

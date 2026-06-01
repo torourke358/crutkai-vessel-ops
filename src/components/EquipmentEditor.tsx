@@ -8,14 +8,16 @@ import EquipmentForm, {
   equipmentValuesToBody,
   type EquipmentFormValues,
 } from "@/components/EquipmentForm";
-import type { Component, Equipment } from "@/lib/types";
+import type { Component, Equipment, VesselZone } from "@/lib/types";
 
 export default function EquipmentEditor({
   initial,
   components,
+  zones,
 }: {
   initial: Equipment | null;
   components: Component[];
+  zones: VesselZone[];
 }) {
   const router = useRouter();
   const isEdit = initial != null;
@@ -30,6 +32,7 @@ export default function EquipmentEditor({
           location_on_vessel: initial.location_on_vessel ?? "",
           current_hours: initial.current_hours == null ? "" : String(initial.current_hours),
           component_id: initial.component_id ?? "",
+          zone_id: initial.zone_id ?? "",
           commissioned_date: initial.commissioned_date ?? "",
           image_paths:
             initial.image_paths && initial.image_paths.length > 0
@@ -109,6 +112,7 @@ export default function EquipmentEditor({
         values={values}
         onChange={(patch) => setValues((v) => ({ ...v, ...patch }))}
         components={components}
+        zones={zones}
       />
 
       <button

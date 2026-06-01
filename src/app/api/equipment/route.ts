@@ -19,6 +19,7 @@ const bodySchema = z.object({
   is_isps: z.boolean().optional(),
   ga_x: z.number().min(0).max(100).nullable().optional(),
   ga_y: z.number().min(0).max(100).nullable().optional(),
+  zone_id: z.string().uuid().nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
 });
 
@@ -58,6 +59,7 @@ export async function POST(request: Request) {
       is_isps: b.is_isps ?? false,
       ga_x: b.ga_x ?? null,
       ga_y: b.ga_y ?? null,
+      zone_id: b.zone_id ?? null,
       notes: b.notes ?? null,
     })
     .select()

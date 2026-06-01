@@ -1,6 +1,6 @@
 "use client";
 
-import type { Component } from "@/lib/types";
+import type { Component, VesselZone } from "@/lib/types";
 import PhotoGallery from "@/components/PhotoGallery";
 import GaPinPicker from "@/components/GaPinPicker";
 
@@ -12,6 +12,7 @@ export interface EquipmentFormValues {
   location_on_vessel: string;
   current_hours: string;
   component_id: string;
+  zone_id: string;
   commissioned_date: string;
   image_paths: string[];
   critical: boolean;
@@ -30,10 +31,12 @@ export default function EquipmentForm({
   values,
   onChange,
   components,
+  zones,
 }: {
   values: EquipmentFormValues;
   onChange: (patch: Partial<EquipmentFormValues>) => void;
   components: Component[];
+  zones: VesselZone[];
 }) {
   return (
     <div className="space-y-4">
@@ -123,7 +126,7 @@ export default function EquipmentForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label htmlFor="component_id" className={labelClass}>
             System
@@ -138,6 +141,24 @@ export default function EquipmentForm({
             {components.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="zone_id" className={labelClass}>
+            Zone
+          </label>
+          <select
+            id="zone_id"
+            value={values.zone_id}
+            onChange={(e) => onChange({ zone_id: e.target.value })}
+            className={inputClass}
+          >
+            <option value="">(none)</option>
+            {zones.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.name}
               </option>
             ))}
           </select>
@@ -249,6 +270,7 @@ export const emptyEquipmentForm: EquipmentFormValues = {
   location_on_vessel: "",
   current_hours: "",
   component_id: "",
+  zone_id: "",
   commissioned_date: "",
   image_paths: [],
   critical: false,
@@ -268,6 +290,7 @@ export function equipmentValuesToBody(v: EquipmentFormValues) {
     location_on_vessel: v.location_on_vessel.trim() || null,
     current_hours: v.current_hours === "" ? null : Number(v.current_hours),
     component_id: v.component_id || null,
+    zone_id: v.zone_id || null,
     commissioned_date: v.commissioned_date || null,
     image_paths: v.image_paths,
     critical: v.critical,
