@@ -59,6 +59,9 @@ export default async function AppLayout({
             <Link href="/yard" className="hover:text-violet-700">
               Yard
             </Link>
+            <Link href="/reports" className="hover:text-violet-700">
+              Reports
+            </Link>
             <NotificationBell />
             {role === "admin" && (
               <>
