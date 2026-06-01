@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { ChecklistTemplate, ChecklistTemplateItem } from "@/lib/types";
 
@@ -117,19 +118,27 @@ export default function ChecklistTemplateManager({
             const its = itemsByTpl.get(t.id) ?? [];
             return (
               <li key={t.id} className="space-y-1 p-3">
-                <p className="text-sm font-semibold text-slate-900">
-                  {t.title}
-                  {t.category && (
-                    <span className="ml-2 text-xs font-normal text-slate-400">
-                      · {t.category}
-                    </span>
-                  )}
-                  {!t.active && (
-                    <span className="ml-2 text-xs font-normal text-slate-400">
-                      (inactive)
-                    </span>
-                  )}
-                </p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {t.title}
+                    {t.category && (
+                      <span className="ml-2 text-xs font-normal text-slate-400">
+                        · {t.category}
+                      </span>
+                    )}
+                    {!t.active && (
+                      <span className="ml-2 text-xs font-normal text-slate-400">
+                        (inactive)
+                      </span>
+                    )}
+                  </p>
+                  <Link
+                    href={`/admin/checklists/${t.id}`}
+                    className="text-xs font-medium text-violet-700 hover:underline"
+                  >
+                    Edit
+                  </Link>
+                </div>
                 {t.description && (
                   <p className="text-xs text-slate-500">{t.description}</p>
                 )}

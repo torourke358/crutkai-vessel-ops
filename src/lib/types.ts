@@ -255,7 +255,8 @@ export interface Defect {
   resolved_at: string | null;
   resolved_by: string | null;
   resolution: string | null;
-  image_path: string | null;
+  image_path: string | null;  // legacy single hero photo, replaced by image_paths
+  image_paths: string[];      // gallery of photos under equipment-photos bucket
   created_at: string;
   updated_at: string;
 }

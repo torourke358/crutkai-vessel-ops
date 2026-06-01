@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import PhotoCapture from "@/components/PhotoCapture";
+import PhotoGallery from "@/components/PhotoGallery";
 import {
   DEFECT_SEVERITY_LABELS,
   type DefectSeverity,
@@ -27,7 +27,7 @@ export default function DefectForm({
   const [severity, setSeverity] = useState<DefectSeverity>("normal");
   const [equipmentId, setEquipmentId] = useState("");
   const [assignedTo, setAssignedTo] = useState("");
-  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imagePaths, setImagePaths] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,7 +47,7 @@ export default function DefectForm({
         severity,
         equipment_id: equipmentId || null,
         assigned_to: assignedTo || null,
-        image_path: imagePath,
+        image_paths: imagePaths,
       }),
     });
     setBusy(false);
@@ -140,16 +140,15 @@ export default function DefectForm({
       </div>
 
       <div>
-        <span className={labelClass}>Photo</span>
+        <span className={labelClass}>Photos</span>
         <p className="mt-0.5 text-xs text-slate-400">
-          A picture of what you found often shortcuts the back-and-forth.
+          Multiple shots help — first photo becomes the hero on the list.
         </p>
         <div className="mt-2">
-          <PhotoCapture
-            value={imagePath}
-            onChange={setImagePath}
+          <PhotoGallery
+            values={imagePaths}
+            onChange={setImagePaths}
             bucket="equipment-photos"
-            alt="Defect"
           />
         </div>
       </div>

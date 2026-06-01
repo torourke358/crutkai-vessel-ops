@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import type {
   UserProfile,
   YardTask,
+  YardTaskComment,
+  YardTaskDocument,
   YardTaskEffort,
   YardTaskUrgency,
 } from "@/lib/types";
@@ -13,17 +15,23 @@ import OwnerWheel from "@/components/wheels/OwnerWheel";
 import ProgressWheel from "@/components/wheels/ProgressWheel";
 import EffortWheel from "@/components/wheels/EffortWheel";
 import ReminderWheel from "@/components/wheels/ReminderWheel";
+import YardTaskAttachments from "@/components/YardTaskAttachments";
+import YardTaskComments from "@/components/YardTaskComments";
 
 // Auto-saving detail panel. Every change debounces and PATCHes the task.
 export default function YardTaskDetailPanel({
   task,
   periodId,
   users,
+  comments = [],
+  documents = [],
   onDeleted,
 }: {
   task: YardTask;
   periodId: string;
   users: Pick<UserProfile, "id" | "full_name">[];
+  comments?: YardTaskComment[];
+  documents?: YardTaskDocument[];
   onDeleted?: () => void;
 }) {
   const router = useRouter();
@@ -261,6 +269,16 @@ export default function YardTaskDetailPanel({
           className="mt-1 block w-full rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-violet-500"
         />
       </div>
+
+      {/* Attachments */}
+      <YardTaskAttachments yardTaskId={draft.id} initial={documents} />
+
+      {/* Comments */}
+      <YardTaskComments
+        yardTaskId={draft.id}
+        initial={comments}
+        users={users}
+      />
 
       {/* Delete */}
       <button

@@ -10,6 +10,7 @@ const bodySchema = z.object({
   assigned_to: z.string().uuid().nullable().optional(),
   severity: z.enum(["low", "normal", "high", "critical"]).default("normal"),
   image_path: z.string().trim().max(500).nullable().optional(),
+  image_paths: z.array(z.string().trim().max(500)).max(20).optional(),
 });
 
 export async function POST(request: Request) {
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
       assigned_to: b.assigned_to ?? null,
       severity: b.severity,
       image_path: b.image_path ?? null,
+      image_paths: b.image_paths ?? [],
       reported_by: user.id,
     })
     .select()

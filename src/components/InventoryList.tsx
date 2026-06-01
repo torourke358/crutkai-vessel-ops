@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Component } from "@/lib/types";
 import {
@@ -32,14 +33,46 @@ const STATUS_FILTERS: { id: "all" | InventoryStatus; label: string }[] = [
 ];
 
 export default function InventoryList({
-  rows,
+  rows: initialRows,
   components,
-  isAdmin,
 }: {
   rows: InventoryRow[];
   components: Component[];
   isAdmin: boolean;
 }) {
+  const router = useRouter();
+  // Local copy so inline-qty edits show immediately without a refetch.
+  // Re-syncs to initialRows on prop change via the key prop the caller can
+  // supply if needed; not using useEffect here to satisfy React 19's strict
+  // set-state-in-effect rule.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  const [rows, setRows] = useState(initialRows);
+  useEffect(() => {
+    setRows(initialRows);
+  }, [initialRows]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  async function saveQty(id: string, next: number) {
+    const before = rows.find((r) => r.id === id);
+    if (!before || before.quantity === next) return;
+    setRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, quantity: next } : r)),
+    );
+    const res = await fetch(`/api/inventory/${id}/qty`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ quantity: next }),
+    });
+    if (!res.ok) {
+      // Revert on failure.
+      setRows((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, quantity: before.quantity } : r)),
+      );
+      return;
+    }
+    router.refresh();
+  }
+
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [componentFilter, setComponentFilter] = useState<string | "all">("all");
@@ -169,53 +202,48 @@ export default function InventoryList({
           <ul className="divide-y divide-slate-100">
             {visible.map((r) => {
               const status = computeStatus(r.quantity, r.critical_threshold);
-              const linkProps = isAdmin
-                ? { href: `/inventory/${r.id}` }
-                : { href: `/inventory/${r.id}`, "aria-disabled": true };
               return (
-                <li key={r.id}>
+                <li key={r.id} className="flex items-start justify-between gap-3 p-3 hover:bg-slate-50">
                   <Link
-                    {...linkProps}
-                    className="flex items-start justify-between gap-3 p-3 hover:bg-slate-50"
+                    href={`/inventory/${r.id}`}
+                    className="min-w-0 flex-1"
                   >
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-semibold text-slate-900">
-                        {r.part_name}
-                      </p>
-                      <p className="truncate text-sm text-slate-500">
-                        {[r.make, r.part_number].filter(Boolean).join(" · ") || "—"}
-                        {r.componentIds.length > 0 && (
-                          <span className="ml-1 text-slate-400">
-                            · {componentNamesFor(r.componentIds, components)}
-                          </span>
-                        )}
-                      </p>
-                      {(r.location || r.hasPhoto) && (
-                        <p className="truncate text-xs text-slate-400">
-                          {r.hasPhoto && <span className="mr-1">📷</span>}
-                          {r.location}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end gap-1 text-right">
-                      <span className="text-sm font-semibold tabular-nums text-slate-900">
-                        {r.quantity}{" "}
-                        <span className="text-xs font-normal text-slate-400">
-                          {r.unit}
-                        </span>
-                      </span>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[status]}`}
-                      >
-                        {STATUS_LABELS[status]}
-                      </span>
-                      {r.critical_threshold != null && (
-                        <span className="text-[10px] text-slate-400">
-                          threshold {r.critical_threshold}
+                    <p className="truncate font-semibold text-slate-900">
+                      {r.part_name}
+                    </p>
+                    <p className="truncate text-sm text-slate-500">
+                      {[r.make, r.part_number].filter(Boolean).join(" · ") || "—"}
+                      {r.componentIds.length > 0 && (
+                        <span className="ml-1 text-slate-400">
+                          · {componentNamesFor(r.componentIds, components)}
                         </span>
                       )}
-                    </div>
+                    </p>
+                    {(r.location || r.hasPhoto) && (
+                      <p className="truncate text-xs text-slate-400">
+                        {r.hasPhoto && <span className="mr-1">📷</span>}
+                        {r.location}
+                      </p>
+                    )}
                   </Link>
+                  <div className="flex flex-col items-end gap-1 text-right">
+                    <InlineQty
+                      itemId={r.id}
+                      qty={r.quantity}
+                      unit={r.unit}
+                      onSave={saveQty}
+                    />
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE_CLASS[status]}`}
+                    >
+                      {STATUS_LABELS[status]}
+                    </span>
+                    {r.critical_threshold != null && (
+                      <span className="text-[10px] text-slate-400">
+                        threshold {r.critical_threshold}
+                      </span>
+                    )}
+                  </div>
                 </li>
               );
             })}
@@ -223,6 +251,75 @@ export default function InventoryList({
         )}
       </div>
     </div>
+  );
+}
+
+// Click-to-edit qty cell. Stepper buttons + a typeable field. Saves on
+// blur / Enter, reverts on Esc. Hits /api/inventory/[id]/qty which goes
+// through the same RPC the parts-consumed trigger uses, so a manual qty
+// drop that crosses the critical threshold still fires the alert.
+function InlineQty({
+  itemId,
+  qty,
+  unit,
+  onSave,
+}: {
+  itemId: string;
+  qty: number;
+  unit: string;
+  onSave: (id: string, next: number) => Promise<void> | void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(qty));
+
+  function start() {
+    setDraft(String(qty));
+    setEditing(true);
+  }
+
+  function commit() {
+    setEditing(false);
+    const n = Number(draft);
+    if (Number.isInteger(n) && n >= 0 && n !== qty) {
+      void onSave(itemId, n);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          autoFocus
+          type="number"
+          min={0}
+          step={1}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") setEditing(false);
+          }}
+          className="w-16 rounded-md border border-violet-300 px-2 py-0.5 text-right text-sm tabular-nums outline-none focus:ring-2 focus:ring-violet-200"
+        />
+        <span className="text-xs text-slate-400">{unit}</span>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        start();
+      }}
+      className="rounded-md px-1.5 py-0.5 text-sm font-semibold tabular-nums text-slate-900 hover:bg-violet-50"
+      title="Tap to edit"
+    >
+      {qty} <span className="text-xs font-normal text-slate-400">{unit}</span>
+    </button>
   );
 }
 

@@ -49,13 +49,23 @@ export default async function DefectDetailPage({
     (users ?? []).map((u) => [u.id, u.full_name ?? "Unknown"] as const),
   );
 
-  let photoUrl: string | null = null;
-  if (defect.image_path) {
+  // Gallery: prefer image_paths, fall back to legacy single image_path so old
+  // rows still render their hero.
+  const photoPaths =
+    defect.image_paths && defect.image_paths.length > 0
+      ? defect.image_paths
+      : defect.image_path
+        ? [defect.image_path]
+        : [];
+  const signedPhotos: { path: string; url: string }[] = [];
+  for (const p of photoPaths) {
     const { data } = await supabase.storage
       .from("equipment-photos")
-      .createSignedUrl(defect.image_path, 300);
-    photoUrl = data?.signedUrl ?? null;
+      .createSignedUrl(p, 300);
+    if (data?.signedUrl) signedPhotos.push({ path: p, url: data.signedUrl });
   }
+  const hero = signedPhotos[0] ?? null;
+  const thumbs = signedPhotos.slice(1);
 
   return (
     <div className="space-y-4 pb-8">
@@ -81,13 +91,28 @@ export default async function DefectDetailPage({
         </span>
       </div>
 
-      {photoUrl && (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={photoUrl}
-          alt={defect.title}
-          className="w-full max-h-72 rounded-2xl object-cover ring-1 ring-slate-200"
-        />
+      {hero && (
+        <div className="space-y-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={hero.url}
+            alt={defect.title}
+            className="w-full max-h-72 rounded-2xl object-cover ring-1 ring-slate-200"
+          />
+          {thumbs.length > 0 && (
+            <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
+              {thumbs.map((t) => (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  key={t.path}
+                  src={t.url}
+                  alt=""
+                  className="aspect-square w-full rounded-lg object-cover ring-1 ring-slate-200"
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {defect.description && (

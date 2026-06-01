@@ -12,6 +12,7 @@ const patchSchema = z.object({
   severity: z.enum(["low", "normal", "high", "critical"]).optional(),
   resolution: z.string().trim().max(4000).nullable().optional(),
   image_path: z.string().trim().max(500).nullable().optional(),
+  image_paths: z.array(z.string().trim().max(500)).max(20).optional(),
 });
 
 type Ctx = { params: Promise<{ id: string }> };

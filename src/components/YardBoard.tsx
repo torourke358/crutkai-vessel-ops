@@ -3,7 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { UserProfile, YardQuadrant, YardTask } from "@/lib/types";
+import type {
+  UserProfile,
+  YardQuadrant,
+  YardTask,
+  YardTaskComment,
+  YardTaskDocument,
+} from "@/lib/types";
 import YardTaskDetailPanel from "@/components/YardTaskDetailPanel";
 
 export interface BoardQuadrant extends YardQuadrant {
@@ -25,11 +31,15 @@ export default function YardBoard({
   quadrants,
   users,
   isAdmin,
+  commentsByTask,
+  documentsByTask,
 }: {
   periodId: string;
   quadrants: BoardQuadrant[];
   users: Pick<UserProfile, "id" | "full_name">[];
   isAdmin: boolean;
+  commentsByTask?: Map<string, YardTaskComment[]>;
+  documentsByTask?: Map<string, YardTaskDocument[]>;
 }) {
   const router = useRouter();
   // `quadrants` comes straight from props. router.refresh() re-renders the
@@ -95,6 +105,8 @@ export default function YardBoard({
             task={selectedTask}
             periodId={periodId}
             users={users}
+            comments={commentsByTask?.get(selectedTask.id) ?? []}
+            documents={documentsByTask?.get(selectedTask.id) ?? []}
             onDeleted={() => setSelectedTaskId(null)}
           />
         ) : (
@@ -111,6 +123,8 @@ export default function YardBoard({
             task={selectedTask}
             periodId={periodId}
             users={users}
+            comments={commentsByTask?.get(selectedTask.id) ?? []}
+            documents={documentsByTask?.get(selectedTask.id) ?? []}
             onDeleted={() => setSelectedTaskId(null)}
           />
         ) : (

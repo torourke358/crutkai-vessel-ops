@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import YardBoard, { type BoardQuadrant } from "@/components/YardBoard";
-import type { UserProfile, YardPeriod, YardQuadrant, YardTask } from "@/lib/types";
+import type {
+  UserProfile,
+  YardPeriod,
+  YardQuadrant,
+  YardTask,
+  YardTaskComment,
+  YardTaskDocument,
+} from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +24,12 @@ export default async function YardPeriodDetailPage({
   const supabase = await createClient();
   const role = await getUserRole();
 
-  const [{ data: period }, { data: quadrants }, { data: tasks }, { data: users }] = await Promise.all([
+  const [
+    { data: period },
+    { data: quadrants },
+    { data: tasks },
+    { data: users },
+  ] = await Promise.all([
     supabase.from("yard_periods").select().eq("id", id).single<YardPeriod>(),
     supabase
       .from("yard_quadrants")
@@ -40,6 +52,37 @@ export default async function YardPeriodDetailPage({
   ]);
 
   if (!period) notFound();
+
+  const taskIds = (tasks ?? []).map((t) => t.id);
+  const [{ data: comments }, { data: documents }] = taskIds.length
+    ? await Promise.all([
+        supabase
+          .from("yard_task_comments")
+          .select()
+          .in("yard_task_id", taskIds)
+          .order("created_at", { ascending: true })
+          .returns<YardTaskComment[]>(),
+        supabase
+          .from("yard_task_documents")
+          .select()
+          .in("yard_task_id", taskIds)
+          .order("uploaded_at", { ascending: false })
+          .returns<YardTaskDocument[]>(),
+      ])
+    : [{ data: [] as YardTaskComment[] }, { data: [] as YardTaskDocument[] }];
+
+  const commentsByTask = new Map<string, YardTaskComment[]>();
+  for (const c of comments ?? []) {
+    const arr = commentsByTask.get(c.yard_task_id) ?? [];
+    arr.push(c);
+    commentsByTask.set(c.yard_task_id, arr);
+  }
+  const docsByTask = new Map<string, YardTaskDocument[]>();
+  for (const d of documents ?? []) {
+    const arr = docsByTask.get(d.yard_task_id) ?? [];
+    arr.push(d);
+    docsByTask.set(d.yard_task_id, arr);
+  }
 
   const board: BoardQuadrant[] = (quadrants ?? []).map((q) => ({
     ...q,
@@ -77,6 +120,8 @@ export default async function YardPeriodDetailPage({
         quadrants={board}
         users={users ?? []}
         isAdmin={role === "admin"}
+        commentsByTask={commentsByTask}
+        documentsByTask={docsByTask}
       />
     </div>
   );
