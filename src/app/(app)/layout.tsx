@@ -2,10 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth";
-import SignOutButton from "@/components/SignOutButton";
-import NotificationBell from "@/components/NotificationBell";
 import NotificationBanner from "@/components/NotificationBanner";
 import InstallPrompt from "@/components/InstallPrompt";
+import NavLinks from "@/components/NavLinks";
 
 // Protected shell for every signed-in screen. Server component: redirects to
 // /login when there's no session (the proxy does this too, but this guards
@@ -53,33 +52,7 @@ export default async function AppLayout({
             />
             Thor
           </Link>
-          <nav className="flex flex-wrap items-center gap-4 text-sm font-medium text-slate-500">
-            <Link href="/inventory" className="hover:text-violet-700">
-              Inventory
-            </Link>
-            <Link href="/equipment" className="hover:text-violet-700">
-              Equipment
-            </Link>
-            <Link href="/maintenance" className="hover:text-violet-700">
-              Maintenance
-            </Link>
-            <Link href="/yard" className="hover:text-violet-700">
-              Yard
-            </Link>
-            <Link href="/reports" className="hover:text-violet-700">
-              Reports
-            </Link>
-            <NotificationBell />
-            {role === "admin" && (
-              <Link href="/admin/components" className="hover:text-violet-700">
-                Systems
-              </Link>
-            )}
-            <Link href="/account/password" className="hover:text-violet-700">
-              Password
-            </Link>
-            <SignOutButton />
-          </nav>
+          <NavLinks role={role} />
         </div>
       </header>
 

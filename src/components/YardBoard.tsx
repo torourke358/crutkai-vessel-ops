@@ -179,21 +179,21 @@ function QuadrantColumn({
 
   return (
     <section
-      className="flex min-h-[260px] flex-col rounded-2xl bg-white shadow-sm ring-1 ring-slate-100"
-      style={{ borderTop: `6px solid ${quadrant.color}` }}
+      className="flex min-h-[260px] flex-col rounded-2xl shadow-sm ring-1 ring-slate-200"
+      style={{ backgroundColor: quadrant.color }}
     >
       <header className="flex items-center justify-between px-4 pt-3">
         <h2 className="text-base font-semibold text-slate-900">
           {quadrant.name}
         </h2>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-slate-700/70">
           {quadrant.tasks.length}
         </span>
       </header>
 
       <ul className="flex-1 space-y-1 px-2 py-2">
         {quadrant.tasks.length === 0 && !adding && (
-          <li className="px-2 py-1 text-xs text-slate-400">
+          <li className="px-2 py-1 text-xs text-slate-700/70">
             No items yet.
           </li>
         )}
@@ -207,12 +207,12 @@ function QuadrantColumn({
                 style={
                   selected
                     ? undefined
-                    : { color: PASTEL_TEXT[quadrant.color] ?? quadrant.color }
+                    : { color: PASTEL_TEXT[quadrant.color] ?? "#0f172a" }
                 }
                 className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   selected
-                    ? "bg-violet-50 text-violet-900 ring-1 ring-violet-200"
-                    : "hover:bg-slate-50"
+                    ? "bg-white text-slate-900 ring-1 ring-violet-300 shadow-sm"
+                    : "hover:bg-white/40"
                 }`}
               >
                 <span className="flex-1 truncate">
@@ -224,7 +224,7 @@ function QuadrantColumn({
                   </span>
                 </span>
                 {t.progress_pct > 0 && t.progress_pct < 100 && (
-                  <span className="shrink-0 text-xs text-slate-400 tabular-nums">
+                  <span className="shrink-0 text-xs text-slate-700/60 tabular-nums">
                     {t.progress_pct}%
                   </span>
                 )}
@@ -234,7 +234,7 @@ function QuadrantColumn({
         })}
       </ul>
 
-      <footer className="border-t border-slate-100 px-2 py-2">
+      <footer className="border-t border-slate-900/10 px-2 py-2">
         {adding ? (
           <div className="space-y-1">
             <input
@@ -273,7 +273,7 @@ function QuadrantColumn({
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="block w-full rounded-md px-3 py-1.5 text-left text-sm font-medium text-slate-500 hover:bg-slate-50 hover:text-violet-700"
+            className="block w-full rounded-md px-3 py-1.5 text-left text-sm font-medium text-slate-700/80 hover:bg-white/40 hover:text-slate-900"
           >
             + Add item
           </button>
