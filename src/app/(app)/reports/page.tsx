@@ -196,7 +196,7 @@ export default async function ReportsPage({
     const cost = r.actual_cost ?? 0;
     if (cost <= 0) continue;
     const name = quadById.get(r.quadrant_id) ?? "Unassigned";
-    const color = quadColorById.get(r.quadrant_id) ?? "#94a3b8"; // slate-400
+    const color = quadColorById.get(r.quadrant_id) || "#94a3b8"; // slate-400 (also catches empty-string colors)
     const cur = costByName.get(name) ?? { name, color, total: 0 };
     cur.total += cost;
     costByName.set(name, cur);

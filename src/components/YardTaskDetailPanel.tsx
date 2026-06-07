@@ -36,6 +36,11 @@ export default function YardTaskDetailPanel({
 }) {
   const router = useRouter();
   const [draft, setDraft] = useState<YardTask>(task);
+  // Cost is edited as a raw string so partial decimals ("10.", "10.50") survive
+  // keystrokes; the parsed number is what gets saved into draft.actual_cost.
+  const [costInput, setCostInput] = useState(
+    task.actual_cost != null ? String(task.actual_cost) : "",
+  );
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const debounceRef = useRef<number | null>(null);
@@ -45,6 +50,7 @@ export default function YardTaskDetailPanel({
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     setDraft(task);
+    setCostInput(task.actual_cost != null ? String(task.actual_cost) : "");
     setSavedAt(null);
   }, [task]);
   /* eslint-enable react-hooks/set-state-in-effect */
@@ -252,10 +258,16 @@ export default function YardTaskDetailPanel({
           type="number"
           min="0"
           step="0.01"
-          value={draft.actual_cost ?? ""}
-          onChange={(e) =>
-            update("actual_cost", e.target.value === "" ? null : Number(e.target.value))
-          }
+          value={costInput}
+          onChange={(e) => {
+            const raw = e.target.value;
+            setCostInput(raw);
+            if (raw === "") update("actual_cost", null);
+            else {
+              const n = Number(raw);
+              if (!Number.isNaN(n)) update("actual_cost", n);
+            }
+          }}
           placeholder="(unset)"
           className="mt-1 block w-full rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-violet-500"
         />
