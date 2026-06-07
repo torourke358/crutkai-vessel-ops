@@ -66,14 +66,27 @@ export async function POST(request: Request) {
       continue;
     }
 
-    const { error } = await supabase
+    // Atomic, race-safe bump — only apply when our reading is >= the stored
+    // value (or unset), so a concurrent higher reading can't be clobbered.
+    const { error, count } = await supabase
       .from("equipment")
       .update({ current_hours: u.hours }, { count: "exact" })
-      .eq("id", u.equipment_id);
+      .eq("id", u.equipment_id)
+      .or(`current_hours.is.null,current_hours.lte.${u.hours}`);
 
     if (error) {
       failed++;
       failures.push({ id: u.equipment_id, reason: error.message });
+      continue;
+    }
+    if (!count) {
+      // A concurrent reading moved current_hours at/above ours — skip as a
+      // regression rather than counting a write that didn't happen.
+      failed++;
+      failures.push({
+        id: u.equipment_id,
+        reason: "skipped: a higher reading was recorded concurrently",
+      });
       continue;
     }
     updated++;

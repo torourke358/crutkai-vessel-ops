@@ -34,7 +34,8 @@ export async function POST(request: Request, ctx: Ctx) {
     .single();
   if (!before) return NextResponse.json({ error: "not_found" }, { status: 404 });
 
-  // Refuse a regression — hours only ever go up.
+  // Refuse a regression — hours only ever go up. Fast-path check for a clear
+  // error message; the atomic guard below is what actually holds the invariant.
   if (before.current_hours != null && parsed.data.hours < before.current_hours) {
     return NextResponse.json(
       {
@@ -45,10 +46,15 @@ export async function POST(request: Request, ctx: Ctx) {
     );
   }
 
+  // Apply only when our reading is >= the stored value (or it's unset). Doing
+  // the comparison inside the WHERE makes "hours only go up" race-safe: if two
+  // people record readings at the same moment, the lower one matches zero rows
+  // instead of clobbering the higher one. (PostgREST ANDs the .or with .eq.)
   const { data: after, error, count } = await supabase
     .from("equipment")
     .update({ current_hours: parsed.data.hours }, { count: "exact" })
     .eq("id", id)
+    .or(`current_hours.is.null,current_hours.lte.${parsed.data.hours}`)
     .select()
     .maybeSingle();
 
@@ -57,6 +63,27 @@ export async function POST(request: Request, ctx: Ctx) {
     return NextResponse.json({ error: "update_failed" }, { status: 500 });
   }
   if (!count || !after) {
+    // Zero rows: either RLS blocked the write, or a concurrent higher reading
+    // landed between our read and write (our value is now a regression).
+    // Re-read to tell them apart and return an accurate message.
+    const { data: current } = await supabase
+      .from("equipment")
+      .select("current_hours")
+      .eq("id", id)
+      .single();
+    if (
+      current &&
+      current.current_hours != null &&
+      parsed.data.hours < current.current_hours
+    ) {
+      return NextResponse.json(
+        {
+          error: "hours_regression",
+          message: `A higher reading (${current.current_hours}) was just recorded; ${parsed.data.hours} would be a regression.`,
+        },
+        { status: 409 },
+      );
+    }
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 

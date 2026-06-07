@@ -37,6 +37,19 @@ export async function POST(request: Request, ctx: Ctx) {
   }
   const b = parsed.data;
 
+  // Read current state first so a double-complete (two crew at once, or a
+  // stale tab re-submitting) can't run the parts-consumption loop twice and
+  // decrement stock twice.
+  const { data: before } = await supabase
+    .from("yard_tasks")
+    .select("id, status")
+    .eq("id", taskId)
+    .single();
+  if (!before) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  if (before.status === "done") {
+    return NextResponse.json({ ok: true, already_complete: true });
+  }
+
   const update: Record<string, unknown> = {
     status: "done",
     progress_pct: 100,
@@ -45,15 +58,30 @@ export async function POST(request: Request, ctx: Ctx) {
   };
   if (b.actual_cost !== undefined) update.actual_cost = b.actual_cost;
 
+  // Guard on status so only the first completer transitions the task to done.
+  // A racing second request matches zero rows and skips the parts loop below.
   const { data: after, error, count } = await supabase
     .from("yard_tasks")
     .update(update, { count: "exact" })
     .eq("id", taskId)
+    .neq("status", "done")
     .select()
     .maybeSingle();
 
   if (error) return NextResponse.json({ error: "update_failed" }, { status: 500 });
-  if (!count || !after) return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  if (!count || !after) {
+    // Zero rows: either a concurrent request just completed it, or RLS denied
+    // the write (not owner/admin). Re-read to tell them apart.
+    const { data: now } = await supabase
+      .from("yard_tasks")
+      .select("status")
+      .eq("id", taskId)
+      .single();
+    if (now?.status === "done") {
+      return NextResponse.json({ ok: true, already_complete: true });
+    }
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   // Consume parts (each insert fires pc_after_insert trigger; alert state
   // recomputed by inv triggers from 02 migration).
