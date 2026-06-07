@@ -153,14 +153,13 @@ export default async function ReportsPage({
     supabase.from("user_profiles").select("id, full_name"),
     supabase.from("yard_periods").select("id, name"),
     supabase.from("yard_quadrants").select("id, name, color"),
-    // Yard cost by quadrant — completed tasks with a recorded cost, same date
-    // scope as the throughput report below. actual_cost is the only cost data
-    // in the app; quadrants are the colored categories.
+    // Yard cost by quadrant — every task that has a recorded cost (planned or
+    // actual, open or completed), grouped by quadrant. Deliberately NOT date-
+    // scoped: it's a snapshot of where yard money is committed right now.
+    // quadrants are the colored categories.
     supabase
       .from("yard_tasks")
       .select("quadrant_id, actual_cost")
-      .gte("completed_at", fromIso)
-      .lte("completed_at", toIso)
       .not("actual_cost", "is", null)
       .returns<{ quadrant_id: string; actual_cost: number | null }[]>(),
     supabase
@@ -388,6 +387,24 @@ export default async function ReportsPage({
             slices={inventoryStatusSlices}
             totalLabel="Items"
             emptyLabel="No inventory items yet."
+          />
+        </div>
+      </section>
+
+      {/* Yard cost by quadrant — all costed tasks (planned + actual), by quadrant */}
+      <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-slate-900">
+          Yard cost by quadrant
+        </h3>
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
+          <PieChart
+            slices={costSlices.map((s) => ({
+              label: s.name,
+              value: s.total,
+              color: s.color,
+            }))}
+            valueFormat={(n) => formatAmount(n, "USD")}
+            emptyLabel="No yard costs entered yet."
           />
         </div>
       </section>
@@ -637,25 +654,6 @@ export default async function ReportsPage({
               </tbody>
             </table>
           )}
-        </div>
-      </section>
-
-      {/* Yard cost by quadrant — CSS conic-gradient pie, no chart library.
-          Same date scope as the throughput report above. */}
-      <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-900">
-          Yard cost by quadrant
-        </h3>
-        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
-          <PieChart
-            slices={costSlices.map((s) => ({
-              label: s.name,
-              value: s.total,
-              color: s.color,
-            }))}
-            valueFormat={(n) => formatAmount(n, "USD")}
-            emptyLabel="No yard costs recorded in this range."
-          />
         </div>
       </section>
 
