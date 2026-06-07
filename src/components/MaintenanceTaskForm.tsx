@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Equipment, UserProfile } from "@/lib/types";
 
 export interface MaintenanceTaskFormValues {
@@ -30,6 +31,36 @@ export default function MaintenanceTaskForm({
   equipment: Pick<Equipment, "id" | "name">[];
   users: Pick<UserProfile, "id" | "full_name">[];
 }) {
+  // Due-type entry is a single "Repeat every [number] [Days/Hours]" control.
+  // The underlying model is unchanged: Days writes interval_days + due_type
+  // 'calendar', Hours writes interval_hours + due_type 'hours', and only one of
+  // the two interval columns is ever set at a time.
+  const unit = values.due_type === "calendar" ? "days" : "hours";
+  const intervalValue =
+    unit === "days" ? values.interval_days : values.interval_hours;
+
+  function setIntervalValue(v: string) {
+    onChange(unit === "days" ? { interval_days: v } : { interval_hours: v });
+  }
+
+  function setUnit(next: "days" | "hours") {
+    if (next === unit) return;
+    // Carry the typed number across the toggle and clear the now-unused field.
+    if (next === "days") {
+      onChange({
+        due_type: "calendar",
+        interval_days: intervalValue,
+        interval_hours: "",
+      });
+    } else {
+      onChange({
+        due_type: "hours",
+        interval_hours: intervalValue,
+        interval_days: "",
+      });
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div>
@@ -48,83 +79,75 @@ export default function MaintenanceTaskForm({
       </div>
 
       <div>
-        <label htmlFor="equipment_id" className={labelClass}>
-          Equipment *
-        </label>
-        <select
-          id="equipment_id"
-          required
+        <span className={labelClass}>Equipment *</span>
+        <EquipmentTypeahead
           value={values.equipment_id}
-          onChange={(e) => onChange({ equipment_id: e.target.value })}
-          className={inputClass}
-        >
-          <option value="" disabled>
-            Choose equipment
-          </option>
-          {equipment.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}
-            </option>
-          ))}
-        </select>
+          equipment={equipment}
+          onChange={(id) => onChange({ equipment_id: id })}
+        />
+        <p className="mt-1 text-xs text-slate-400">
+          Start typing to search. Type a new name and choose &quot;Add as
+          new&quot; to create the unit on the fly.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="due_type" className={labelClass}>
-            Due type *
+          <label htmlFor="interval_value" className={labelClass}>
+            Repeat every *
+          </label>
+          <div className="mt-1 flex gap-2">
+            <input
+              id="interval_value"
+              type="number"
+              inputMode="numeric"
+              min="1"
+              step="1"
+              required
+              value={intervalValue}
+              onChange={(e) => setIntervalValue(e.target.value)}
+              className="block w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-base text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+              placeholder={unit === "days" ? "e.g. 365" : "e.g. 250"}
+            />
+            <select
+              aria-label="Interval unit"
+              value={unit}
+              onChange={(e) => setUnit(e.target.value as "days" | "hours")}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-3 text-base text-slate-900 shadow-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-200"
+            >
+              <option value="days">Days</option>
+              <option value="hours">Hours</option>
+            </select>
+          </div>
+          <p className="mt-1 text-xs text-slate-400">
+            {unit === "days"
+              ? "Calendar-based — due a number of days after it was last done."
+              : "Hours-based — due once the unit runs this many hours past the last service."}
+          </p>
+        </div>
+        <div>
+          <label htmlFor="priority" className={labelClass}>
+            Priority
           </label>
           <select
-            id="due_type"
-            value={values.due_type}
-            onChange={(e) => onChange({ due_type: e.target.value as "calendar" | "hours" })}
+            id="priority"
+            value={values.priority}
+            onChange={(e) =>
+              onChange({ priority: e.target.value as MaintenanceTaskFormValues["priority"] })
+            }
             className={inputClass}
           >
-            <option value="calendar">Calendar (days)</option>
-            <option value="hours">Hours of operation</option>
+            <option value="">(unset)</option>
+            <option value="low">Low</option>
+            <option value="moderate">Moderate</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
           </select>
         </div>
-        {values.due_type === "calendar" ? (
-          <div>
-            <label htmlFor="interval_days" className={labelClass}>
-              Interval (days) *
-            </label>
-            <input
-              id="interval_days"
-              type="number"
-              inputMode="numeric"
-              min="1"
-              step="1"
-              required
-              value={values.interval_days}
-              onChange={(e) => onChange({ interval_days: e.target.value })}
-              className={inputClass}
-              placeholder="e.g. 365"
-            />
-          </div>
-        ) : (
-          <div>
-            <label htmlFor="interval_hours" className={labelClass}>
-              Interval (hours) *
-            </label>
-            <input
-              id="interval_hours"
-              type="number"
-              inputMode="numeric"
-              min="1"
-              step="1"
-              required
-              value={values.interval_hours}
-              onChange={(e) => onChange({ interval_hours: e.target.value })}
-              className={inputClass}
-              placeholder="e.g. 250"
-            />
-          </div>
-        )}
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {values.due_type === "calendar" ? (
+        {unit === "days" ? (
           <div>
             <label htmlFor="last_done_date" className={labelClass}>
               Last done date
@@ -156,43 +179,23 @@ export default function MaintenanceTaskForm({
           </div>
         )}
         <div>
-          <label htmlFor="priority" className={labelClass}>
-            Priority
+          <label htmlFor="assigned_to" className={labelClass}>
+            Assigned to
           </label>
           <select
-            id="priority"
-            value={values.priority}
-            onChange={(e) =>
-              onChange({ priority: e.target.value as MaintenanceTaskFormValues["priority"] })
-            }
+            id="assigned_to"
+            value={values.assigned_to}
+            onChange={(e) => onChange({ assigned_to: e.target.value })}
             className={inputClass}
           >
-            <option value="">(unset)</option>
-            <option value="low">Low</option>
-            <option value="moderate">Moderate</option>
-            <option value="high">High</option>
-            <option value="critical">Critical</option>
+            <option value="">(unassigned)</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.full_name ?? u.id}
+              </option>
+            ))}
           </select>
         </div>
-      </div>
-
-      <div>
-        <label htmlFor="assigned_to" className={labelClass}>
-          Assigned to
-        </label>
-        <select
-          id="assigned_to"
-          value={values.assigned_to}
-          onChange={(e) => onChange({ assigned_to: e.target.value })}
-          className={inputClass}
-        >
-          <option value="">(unassigned)</option>
-          {users.map((u) => (
-            <option key={u.id} value={u.id}>
-              {u.full_name ?? u.id}
-            </option>
-          ))}
-        </select>
       </div>
 
       <div>
@@ -207,6 +210,189 @@ export default function MaintenanceTaskForm({
           className={inputClass}
         />
       </div>
+    </div>
+  );
+}
+
+// Single-select type-ahead for the task's equipment, modeled on
+// ComponentMultiSelect: search the active equipment list, or type a name with
+// no match and create the unit on the fly (POST /api/equipment with name only)
+// so maintenance_tasks.equipment_id keeps its NOT NULL FK — which
+// complete_maintenance_task() relies on to bump current_hours.
+function EquipmentTypeahead({
+  value,
+  equipment,
+  onChange,
+}: {
+  value: string;
+  equipment: Pick<Equipment, "id" | "name">[];
+  onChange: (id: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [filter, setFilter] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  // Local mirror so a just-created unit appears immediately, before any refresh.
+  const [local, setLocal] = useState(equipment);
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    setLocal(equipment);
+  }, [equipment]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  // Close the dropdown on a click outside the wrapper.
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: PointerEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("pointerdown", onDown);
+    return () => document.removeEventListener("pointerdown", onDown);
+  }, [open]);
+
+  const selected = useMemo(
+    () => local.find((e) => e.id === value) ?? null,
+    [local, value],
+  );
+
+  const available = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    return local.filter((e) => (q ? e.name.toLowerCase().includes(q) : true));
+  }, [local, filter]);
+
+  const filterMatchesExisting = useMemo(() => {
+    const q = filter.trim().toLowerCase();
+    if (!q) return false;
+    return local.some((e) => e.name.toLowerCase() === q);
+  }, [filter, local]);
+  const showCreate = filter.trim().length > 0 && !filterMatchesExisting;
+
+  function pick(id: string) {
+    onChange(id);
+    setFilter("");
+    setOpen(false);
+  }
+
+  async function createNew() {
+    const name = filter.trim();
+    if (!name) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const res = await fetch("/api/equipment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) {
+        setCreateError("Couldn't add that equipment.");
+        return;
+      }
+      const created = (await res.json()) as { id: string; name: string };
+      setLocal((prev) =>
+        prev.some((e) => e.id === created.id)
+          ? prev
+          : [...prev, { id: created.id, name: created.name }],
+      );
+      onChange(created.id);
+      setFilter("");
+      setOpen(false);
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className={`${inputClass} flex items-center justify-between text-left`}
+      >
+        <span className={selected ? "text-slate-900" : "text-slate-400"}>
+          {selected
+            ? selected.name
+            : value
+              ? "Selected equipment"
+              : "Choose or type equipment…"}
+        </span>
+        <svg
+          viewBox="0 0 20 20"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          className="ml-2 shrink-0 text-slate-400"
+        >
+          <path d="M6 8l4 4 4-4" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-30 mt-1 overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-slate-200">
+          <input
+            autoFocus
+            type="text"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Search or type a new name…"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                if (available.length > 0) {
+                  e.preventDefault();
+                  pick(available[0].id);
+                } else if (showCreate) {
+                  e.preventDefault();
+                  void createNew();
+                }
+              } else if (e.key === "Escape") {
+                setOpen(false);
+              }
+            }}
+            className="block w-full border-b border-slate-100 px-3 py-2 text-sm outline-none focus:bg-slate-50"
+          />
+          <div className="max-h-60 overflow-y-auto p-1">
+            {available.length === 0 && !showCreate && (
+              <p className="px-2 py-2 text-xs text-slate-400">No matches.</p>
+            )}
+            {available.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => pick(e.id)}
+                className={`block w-full rounded-lg px-2 py-1.5 text-left text-sm hover:bg-slate-100 ${
+                  e.id === value
+                    ? "bg-violet-50 font-medium text-violet-700"
+                    : "text-slate-700"
+                }`}
+              >
+                {e.name}
+              </button>
+            ))}
+            {showCreate && (
+              <button
+                type="button"
+                onClick={() => void createNew()}
+                disabled={creating}
+                className="block w-full rounded-lg px-2 py-1.5 text-left text-sm font-medium text-violet-700 hover:bg-violet-50 disabled:opacity-60"
+              >
+                {creating
+                  ? "Adding…"
+                  : `+ Add "${filter.trim()}" as new equipment`}
+              </button>
+            )}
+          </div>
+          {createError && (
+            <p className="border-t border-slate-100 px-3 py-2 text-xs text-rose-700">
+              {createError}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
