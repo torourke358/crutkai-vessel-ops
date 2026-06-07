@@ -17,12 +17,9 @@ interface RawRow {
   current_hours: number | null;
   active: boolean;
   critical: boolean;
-  is_ism: boolean;
-  is_isps: boolean;
   ga_x: number | null;
   ga_y: number | null;
   component_id: string | null;
-  zone_id: string | null;
   component: { name: string } | null;
 }
 
@@ -49,7 +46,7 @@ export default async function EquipmentPage() {
     supabase
       .from("equipment")
       .select(
-        "id, name, make, model, location_on_vessel, current_hours, active, critical, is_ism, is_isps, ga_x, ga_y, component_id, zone_id, component:components(name)",
+        "id, name, make, model, location_on_vessel, current_hours, active, critical, ga_x, ga_y, component_id, component:components(name)",
       )
       .order("name", { ascending: true })
       .returns<RawRow[]>(),
@@ -110,8 +107,6 @@ export default async function EquipmentPage() {
       componentName: r.component?.name ?? null,
       active: r.active,
       critical: r.critical,
-      is_ism: r.is_ism,
-      is_isps: r.is_isps,
       pmState,
       taskCount: ts.length,
     };
@@ -124,20 +119,36 @@ export default async function EquipmentPage() {
   );
   const totalActive = (rows ?? []).filter((r) => r.active).length;
 
-  // Group active equipment by zone for the box grid below the schematic.
-  // Equipment without a zone falls into a synthetic "Unassigned" bucket.
-  const byZone = new Map<string | "unassigned", RawRow[]>();
+  // Group active equipment by location for the box grid below the schematic.
+  // Location is the consolidated field (formerly a separate Zone): values come
+  // from the vessel_zones-fed dropdown, but legacy free-text strings can also
+  // appear. We order managed locations by their vessel_zones display_order,
+  // then any custom strings alphabetically, then a synthetic "Unassigned"
+  // bucket for blanks.
+  const byLocation = new Map<string, RawRow[]>();
   for (const r of rows ?? []) {
     if (!r.active) continue;
-    const key = r.zone_id ?? "unassigned";
-    const arr = byZone.get(key) ?? [];
+    const key = (r.location_on_vessel ?? "").trim();
+    const arr = byLocation.get(key) ?? [];
     arr.push(r);
-    byZone.set(key, arr);
+    byLocation.set(key, arr);
   }
-  const zoneCards = (zones ?? [])
-    .map((z) => ({ zone: z, items: byZone.get(z.id) ?? [] }))
-    .filter(({ items }) => items.length > 0);
-  const unassigned = byZone.get("unassigned") ?? [];
+  const seenLocations = new Set<string>();
+  const locationCards: { title: string; items: RawRow[] }[] = [];
+  for (const z of zones ?? []) {
+    const items = byLocation.get(z.name);
+    if (items && items.length > 0) {
+      locationCards.push({ title: z.name, items });
+      seenLocations.add(z.name);
+    }
+  }
+  const customLocations = [...byLocation.keys()]
+    .filter((k) => k !== "" && !seenLocations.has(k))
+    .sort((a, b) => a.localeCompare(b));
+  for (const k of customLocations) {
+    locationCards.push({ title: k, items: byLocation.get(k) ?? [] });
+  }
+  const unassigned = byLocation.get("") ?? [];
 
   return (
     <div className="space-y-4">
@@ -202,24 +213,24 @@ export default async function EquipmentPage() {
         </p>
       </section>
 
-      {/* Zone cards — equipment grouped by physical part of the ship. Each
-          zone is a small card with its name as the header and its equipment
-          listed inside. Tap any row to open the unit's detail page. */}
+      {/* Location cards — equipment grouped by where it lives on the vessel.
+          Each location is a small card with its name as the header and its
+          equipment listed inside. Tap any row to open the unit's detail page. */}
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-900">By zone</h2>
-        {zoneCards.length === 0 && unassigned.length === 0 ? (
+        <h2 className="text-sm font-semibold text-slate-900">By location</h2>
+        {locationCards.length === 0 && unassigned.length === 0 ? (
           <p className="rounded-2xl bg-white p-4 text-center text-sm text-slate-400 ring-1 ring-slate-100">
-            No equipment is assigned to a zone yet. Edit a unit and pick its
-            zone from the Zone dropdown.
+            No equipment has a location yet. Edit a unit and pick its
+            &quot;Location on vessel.&quot;
           </p>
         ) : (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {zoneCards.map(({ zone, items }) => (
-              <ZoneCard key={zone.id} title={zone.name} items={items} />
+            {locationCards.map(({ title, items }) => (
+              <LocationCard key={title} title={title} items={items} />
             ))}
             {unassigned.length > 0 && (
-              <ZoneCard
-                key="unassigned"
+              <LocationCard
+                key="__unassigned"
                 title="Unassigned"
                 items={unassigned}
                 muted
@@ -234,7 +245,7 @@ export default async function EquipmentPage() {
   );
 }
 
-function ZoneCard({
+function LocationCard({
   title,
   items,
   muted = false,

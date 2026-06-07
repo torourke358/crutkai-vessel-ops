@@ -118,16 +118,6 @@ export default async function EquipmentDetailPage({
                 Critical
               </span>
             )}
-            {equipment.is_ism && (
-              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-700">
-                ISM
-              </span>
-            )}
-            {equipment.is_isps && (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-sky-700">
-                ISPS
-              </span>
-            )}
           </div>
         </div>
         <Link href="/equipment" className="shrink-0 text-sm text-slate-500">

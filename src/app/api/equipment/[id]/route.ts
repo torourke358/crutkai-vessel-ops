@@ -15,11 +15,8 @@ const patchSchema = z.object({
   commissioned_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   image_paths: z.array(z.string().trim().max(500)).max(20).optional(),
   critical: z.boolean().optional(),
-  is_ism: z.boolean().optional(),
-  is_isps: z.boolean().optional(),
   ga_x: z.number().min(0).max(100).nullable().optional(),
   ga_y: z.number().min(0).max(100).nullable().optional(),
-  zone_id: z.string().uuid().nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
   active: z.boolean().optional(),
 });

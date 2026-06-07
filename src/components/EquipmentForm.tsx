@@ -12,12 +12,9 @@ export interface EquipmentFormValues {
   location_on_vessel: string;
   current_hours: string;
   component_id: string;
-  zone_id: string;
   commissioned_date: string;
   image_paths: string[];
   critical: boolean;
-  is_ism: boolean;
-  is_isps: boolean;
   ga_x: number | null;
   ga_y: number | null;
   notes: string;
@@ -38,6 +35,14 @@ export default function EquipmentForm({
   components: Component[];
   zones: VesselZone[];
 }) {
+  // A location string that isn't one of the managed vessel_zones names — e.g.
+  // a legacy free-text value typed before this became a dropdown. We keep it
+  // selectable so editing the unit doesn't wipe it.
+  const loc = values.location_on_vessel.trim();
+  const locationIsCustom =
+    loc.length > 0 &&
+    !zones.some((z) => z.name.toLowerCase() === loc.toLowerCase());
+
   return (
     <div className="space-y-4">
       <div>
@@ -117,16 +122,29 @@ export default function EquipmentForm({
         <label htmlFor="location_on_vessel" className={labelClass}>
           Location on vessel
         </label>
-        <input
+        <select
           id="location_on_vessel"
-          type="text"
           value={values.location_on_vessel}
           onChange={(e) => onChange({ location_on_vessel: e.target.value })}
           className={inputClass}
-        />
+        >
+          <option value="">(none)</option>
+          {zones.map((z) => (
+            <option key={z.id} value={z.name}>
+              {z.name}
+            </option>
+          ))}
+          {/* Preserve a legacy/custom string that isn't one of the managed
+              locations, so editing a unit never silently drops its location. */}
+          {locationIsCustom && (
+            <option value={values.location_on_vessel}>
+              {values.location_on_vessel} (custom)
+            </option>
+          )}
+        </select>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="component_id" className={labelClass}>
             System
@@ -141,24 +159,6 @@ export default function EquipmentForm({
             {components.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="zone_id" className={labelClass}>
-            Zone
-          </label>
-          <select
-            id="zone_id"
-            value={values.zone_id}
-            onChange={(e) => onChange({ zone_id: e.target.value })}
-            className={inputClass}
-          >
-            <option value="">(none)</option>
-            {zones.map((z) => (
-              <option key={z.id} value={z.id}>
-                {z.name}
               </option>
             ))}
           </select>
@@ -184,9 +184,9 @@ export default function EquipmentForm({
       <div>
         <span className={labelClass}>Classification</span>
         <p className="mt-0.5 text-xs text-slate-400">
-          Mark the unit for engineering priority and survey scope.
+          Mark the unit for engineering priority.
         </p>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="mt-2">
           <label className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
             <input
               type="checkbox"
@@ -195,24 +195,6 @@ export default function EquipmentForm({
               className="h-4 w-4"
             />
             <span className="text-sm text-slate-700">Critical equipment</span>
-          </label>
-          <label className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
-            <input
-              type="checkbox"
-              checked={values.is_ism}
-              onChange={(e) => onChange({ is_ism: e.target.checked })}
-              className="h-4 w-4"
-            />
-            <span className="text-sm text-slate-700">ISM</span>
-          </label>
-          <label className="flex items-center gap-2 rounded-xl bg-white px-3 py-2 ring-1 ring-slate-200">
-            <input
-              type="checkbox"
-              checked={values.is_isps}
-              onChange={(e) => onChange({ is_isps: e.target.checked })}
-              className="h-4 w-4"
-            />
-            <span className="text-sm text-slate-700">ISPS</span>
           </label>
         </div>
       </div>
@@ -270,12 +252,9 @@ export const emptyEquipmentForm: EquipmentFormValues = {
   location_on_vessel: "",
   current_hours: "",
   component_id: "",
-  zone_id: "",
   commissioned_date: "",
   image_paths: [],
   critical: false,
-  is_ism: false,
-  is_isps: false,
   ga_x: null,
   ga_y: null,
   notes: "",
@@ -290,12 +269,9 @@ export function equipmentValuesToBody(v: EquipmentFormValues) {
     location_on_vessel: v.location_on_vessel.trim() || null,
     current_hours: v.current_hours === "" ? null : Number(v.current_hours),
     component_id: v.component_id || null,
-    zone_id: v.zone_id || null,
     commissioned_date: v.commissioned_date || null,
     image_paths: v.image_paths,
     critical: v.critical,
-    is_ism: v.is_ism,
-    is_isps: v.is_isps,
     ga_x: v.ga_x,
     ga_y: v.ga_y,
     notes: v.notes.trim() || null,

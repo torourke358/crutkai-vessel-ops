@@ -19,8 +19,9 @@ export interface Component {
   active: boolean;
 }
 
-// Physical zones on the vessel ("part of the ship"). Equipment lives in one
-// zone; the GA-grouped view uses this as the grouping axis.
+// Physical locations on the vessel ("part of the ship"). The managed list that
+// feeds the equipment "Location on vessel" dropdown; equipment stores the
+// chosen name string in equipment.location_on_vessel.
 export interface VesselZone {
   id: string;
   code: string;
@@ -86,11 +87,8 @@ export interface Equipment {
   image_path: string | null;        // legacy single hero photo (kept until app code drops it)
   image_paths: string[];            // gallery of photo paths under equipment-photos
   critical: boolean;
-  is_ism: boolean;                  // flag for ISM survey + compliance review
-  is_isps: boolean;                 // flag for ISPS survey + compliance review
   ga_x: number | null;              // pin position on /public/ga-schematic.svg (0..100 % of width)
   ga_y: number | null;              // pin position (0..100 % of height)
-  zone_id: string | null;           // FK to vessel_zones — "part of the ship"
   notes: string | null;
   active: boolean;
   created_at: string;

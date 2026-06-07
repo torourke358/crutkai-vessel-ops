@@ -32,7 +32,6 @@ export default function EquipmentEditor({
           location_on_vessel: initial.location_on_vessel ?? "",
           current_hours: initial.current_hours == null ? "" : String(initial.current_hours),
           component_id: initial.component_id ?? "",
-          zone_id: initial.zone_id ?? "",
           commissioned_date: initial.commissioned_date ?? "",
           image_paths:
             initial.image_paths && initial.image_paths.length > 0
@@ -41,8 +40,6 @@ export default function EquipmentEditor({
                 ? [initial.image_path]
                 : [],
           critical: initial.critical ?? false,
-          is_ism: initial.is_ism ?? false,
-          is_isps: initial.is_isps ?? false,
           ga_x: initial.ga_x ?? null,
           ga_y: initial.ga_y ?? null,
           notes: initial.notes ?? "",
