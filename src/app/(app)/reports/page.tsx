@@ -189,12 +189,15 @@ export default async function ReportsPage({
   const costSlices = [...costByName.values()].sort((a, b) => b.total - a.total);
   const costTotal = costSlices.reduce((s, x) => s + x.total, 0);
 
-  // Build the conic-gradient stops once (no chart library — CSS pie).
-  let costAcc = 0;
-  const costStops = costSlices.map((s) => {
-    const start = (costAcc / costTotal) * 100;
-    costAcc += s.total;
-    const end = (costAcc / costTotal) * 100;
+  // Build the conic-gradient stops (no chart library — CSS pie). Use prefix
+  // sums so there's no mutable accumulator captured during render. Slice count
+  // is tiny (a handful of quadrants), so the O(n^2) walk is free.
+  const costStops = costSlices.map((s, i) => {
+    const before = costSlices
+      .slice(0, i)
+      .reduce((sum, x) => sum + x.total, 0);
+    const start = (before / costTotal) * 100;
+    const end = ((before + s.total) / costTotal) * 100;
     return `${s.color} ${start}% ${end}%`;
   });
   const costGradient = `conic-gradient(${costStops.join(", ")})`;
