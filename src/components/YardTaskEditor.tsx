@@ -249,7 +249,7 @@ export default function YardTaskEditor({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700">Actual cost (USD)</label>
+          <label className="block text-sm font-medium text-slate-700">Cost (USD)</label>
           <input
             type="number"
             min="0"

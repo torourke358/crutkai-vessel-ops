@@ -87,6 +87,7 @@ export default function YardTaskDetailPanel({
               status: next.status,
               urgency: next.urgency,
               follower_ids: next.follower_ids,
+              actual_cost: next.actual_cost,
             }),
           },
         );
@@ -240,6 +241,24 @@ export default function YardTaskDetailPanel({
             </select>
           </div>
         </div>
+      </div>
+
+      {/* Cost */}
+      <div>
+        <label className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          Cost (USD)
+        </label>
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={draft.actual_cost ?? ""}
+          onChange={(e) =>
+            update("actual_cost", e.target.value === "" ? null : Number(e.target.value))
+          }
+          placeholder="(unset)"
+          className="mt-1 block w-full rounded-lg bg-slate-800 px-3 py-2 text-sm text-slate-100 outline-none focus:ring-2 focus:ring-violet-500"
+        />
       </div>
 
       {/* Notes */}
