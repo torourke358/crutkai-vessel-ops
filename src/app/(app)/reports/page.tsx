@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { formatDate, todayLocal } from "@/lib/format";
+import { formatAmount, formatDate, todayLocal } from "@/lib/format";
 import { computeDueState, isDueSoon } from "@/lib/maintenance";
 import ReportsDateRange from "@/components/ReportsDateRange";
 import type {
@@ -102,6 +102,7 @@ export default async function ReportsPage({
     { data: users },
     { data: periods },
     { data: quadrants },
+    { data: yardCost },
   ] = await Promise.all([
     supabase
       .from("maintenance_tasks")
@@ -147,7 +148,17 @@ export default async function ReportsPage({
       .returns<PartsConsumedRow[]>(),
     supabase.from("user_profiles").select("id, full_name"),
     supabase.from("yard_periods").select("id, name"),
-    supabase.from("yard_quadrants").select("id, name"),
+    supabase.from("yard_quadrants").select("id, name, color"),
+    // Yard cost by quadrant — completed tasks with a recorded cost, same date
+    // scope as the throughput report below. actual_cost is the only cost data
+    // in the app; quadrants are the colored categories.
+    supabase
+      .from("yard_tasks")
+      .select("quadrant_id, actual_cost")
+      .gte("completed_at", fromIso)
+      .lte("completed_at", toIso)
+      .not("actual_cost", "is", null)
+      .returns<{ quadrant_id: string; actual_cost: number | null }[]>(),
   ]);
 
   const nameById = new Map(
@@ -155,6 +166,38 @@ export default async function ReportsPage({
   );
   const periodById = new Map((periods ?? []).map((p) => [p.id, p.name] as const));
   const quadById = new Map((quadrants ?? []).map((q) => [q.id, q.name] as const));
+  const quadColorById = new Map(
+    (quadrants ?? []).map((q) => [q.id, q.color] as const),
+  );
+
+  // Cost by quadrant. Quadrants are period-scoped, so the same category lives
+  // in several periods; aggregate by quadrant NAME and take the first color we
+  // see for that name (template colors are consistent across periods).
+  const costByName = new Map<
+    string,
+    { name: string; color: string; total: number }
+  >();
+  for (const r of yardCost ?? []) {
+    const cost = r.actual_cost ?? 0;
+    if (cost <= 0) continue;
+    const name = quadById.get(r.quadrant_id) ?? "Unassigned";
+    const color = quadColorById.get(r.quadrant_id) ?? "#94a3b8"; // slate-400
+    const cur = costByName.get(name) ?? { name, color, total: 0 };
+    cur.total += cost;
+    costByName.set(name, cur);
+  }
+  const costSlices = [...costByName.values()].sort((a, b) => b.total - a.total);
+  const costTotal = costSlices.reduce((s, x) => s + x.total, 0);
+
+  // Build the conic-gradient stops once (no chart library — CSS pie).
+  let costAcc = 0;
+  const costStops = costSlices.map((s) => {
+    const start = (costAcc / costTotal) * 100;
+    costAcc += s.total;
+    const end = (costAcc / costTotal) * 100;
+    return `${s.color} ${start}% ${end}%`;
+  });
+  const costGradient = `conic-gradient(${costStops.join(", ")})`;
 
   // -------- OPERATIONAL (current state) --------
 
@@ -460,12 +503,20 @@ export default async function ReportsPage({
           <h3 className="text-sm font-semibold text-slate-900">
             Yard task throughput
           </h3>
-          <a
-            href={`/api/reports/yard/export${qs}`}
-            className="text-sm font-medium text-violet-700 hover:underline"
-          >
-            Excel
-          </a>
+          <div className="flex items-center gap-3">
+            <a
+              href={`/api/reports/yard/export${qs}`}
+              className="text-sm font-medium text-violet-700 hover:underline"
+            >
+              Excel
+            </a>
+            <a
+              href={`/api/reports/yard/export${qs}&format=csv`}
+              className="text-sm font-medium text-violet-700 hover:underline"
+            >
+              CSV
+            </a>
+          </div>
         </div>
         <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
           {yardSummaryRows.length === 0 ? (
@@ -495,6 +546,61 @@ export default async function ReportsPage({
                 ))}
               </tbody>
             </table>
+          )}
+        </div>
+      </section>
+
+      {/* Yard cost by quadrant — CSS conic-gradient pie, no chart library.
+          Same date scope as the throughput report above. */}
+      <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-slate-900">
+          Yard cost by quadrant
+        </h3>
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
+          {costSlices.length === 0 ? (
+            <p className="p-4 text-center text-sm text-slate-400">
+              No yard costs recorded in this range.
+            </p>
+          ) : (
+            <div className="flex flex-col items-center gap-6 sm:flex-row">
+              <div
+                className="h-44 w-44 shrink-0 rounded-full ring-1 ring-slate-200"
+                style={{ background: costGradient }}
+                role="img"
+                aria-label="Yard cost by quadrant"
+              />
+              <ul className="w-full space-y-1.5">
+                {costSlices.map((s) => {
+                  const pct = costTotal > 0 ? (s.total / costTotal) * 100 : 0;
+                  return (
+                    <li
+                      key={s.name}
+                      className="flex items-center justify-between gap-3 text-sm"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span
+                          className="h-3 w-3 shrink-0 rounded-sm ring-1 ring-black/5"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        <span className="truncate text-slate-700">{s.name}</span>
+                      </span>
+                      <span className="shrink-0 tabular-nums text-slate-500">
+                        {formatAmount(s.total, "USD")}
+                        <span className="ml-2 text-slate-400">
+                          {pct.toFixed(0)}%
+                        </span>
+                      </span>
+                    </li>
+                  );
+                })}
+                <li className="flex items-center justify-between gap-3 border-t border-slate-100 pt-1.5 text-sm font-medium">
+                  <span className="text-slate-700">Total</span>
+                  <span className="tabular-nums text-slate-900">
+                    {formatAmount(costTotal, "USD")}
+                  </span>
+                </li>
+              </ul>
+            </div>
           )}
         </div>
       </section>

@@ -25,6 +25,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const from = url.searchParams.get("from") ?? todayLocal();
   const to = url.searchParams.get("to") ?? todayLocal();
+  const format = url.searchParams.get("format"); // "csv" → Numbers-friendly export
   const fromIso = `${from}T00:00:00`;
   const toIso = `${to}T23:59:59`;
 
@@ -53,14 +54,6 @@ export async function GET(request: Request) {
   const periodById = new Map((periods ?? []).map((p) => [p.id, p.name] as const));
   const quadById = new Map((quads ?? []).map((q) => [q.id, q.name] as const));
 
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Thor · M/Y Anne-Marie";
-  wb.created = new Date();
-
-  const ws = wb.addWorksheet("Yard throughput", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
-
   const headers = [
     "Completed",
     "Crew member",
@@ -70,6 +63,48 @@ export async function GET(request: Request) {
     "Yard period",
     "Quadrant",
   ];
+
+  // CSV path — Craig opens these in Apple Numbers, which reads .csv natively.
+  // Same columns and data as the xlsx; the xlsx path below is unchanged.
+  if (format === "csv") {
+    const esc = (v: unknown) => {
+      const s = v == null ? "" : String(v);
+      return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const lines = [headers.map(esc).join(",")];
+    for (const r of rows ?? []) {
+      lines.push(
+        [
+          r.completed_at ? r.completed_at.slice(0, 10) : "",
+          r.completed_by ? nameById.get(r.completed_by) ?? "Unknown" : "Unassigned",
+          r.title,
+          r.effort ?? "",
+          r.actual_cost ?? "",
+          periodById.get(r.yard_period_id) ?? "",
+          quadById.get(r.quadrant_id) ?? "",
+        ]
+          .map(esc)
+          .join(","),
+      );
+    }
+    const csv = "﻿" + lines.join("\r\n");
+    return new NextResponse(csv, {
+      status: 200,
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="yard-${from}-to-${to}.csv"`,
+      },
+    });
+  }
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = "Thor · M/Y Anne-Marie";
+  wb.created = new Date();
+
+  const ws = wb.addWorksheet("Yard throughput", {
+    views: [{ state: "frozen", ySplit: 1 }],
+  });
+
   ws.addRow(headers);
 
   const widths = headers.map((h) => h.length);
