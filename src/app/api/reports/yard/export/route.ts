@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import ExcelJS from "exceljs";
 import { createClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
+import { csvResponse } from "@/lib/csv";
 
 interface Row {
   id: string;
@@ -15,6 +15,7 @@ interface Row {
 }
 
 // GET /api/reports/yard/export?from=YYYY-MM-DD&to=YYYY-MM-DD
+// Yard throughput, exported as a Numbers-friendly CSV.
 export async function GET(request: Request) {
   const supabase = await createClient();
   const {
@@ -25,7 +26,6 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const from = url.searchParams.get("from") ?? todayLocal();
   const to = url.searchParams.get("to") ?? todayLocal();
-  const format = url.searchParams.get("format"); // "csv" → Numbers-friendly export
   const fromIso = `${from}T00:00:00`;
   const toIso = `${to}T23:59:59`;
 
@@ -63,93 +63,15 @@ export async function GET(request: Request) {
     "Yard period",
     "Quadrant",
   ];
+  const dataRows = (rows ?? []).map((r) => [
+    r.completed_at ? r.completed_at.slice(0, 10) : "",
+    r.completed_by ? nameById.get(r.completed_by) ?? "Unknown" : "Unassigned",
+    r.title,
+    r.effort ?? "",
+    r.actual_cost ?? "",
+    periodById.get(r.yard_period_id) ?? "",
+    quadById.get(r.quadrant_id) ?? "",
+  ]);
 
-  // CSV path — Craig opens these in Apple Numbers, which reads .csv natively.
-  // Same columns and data as the xlsx; the xlsx path below is unchanged.
-  if (format === "csv") {
-    const esc = (v: unknown) => {
-      const s = v == null ? "" : String(v);
-      return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const lines = [headers.map(esc).join(",")];
-    for (const r of rows ?? []) {
-      lines.push(
-        [
-          r.completed_at ? r.completed_at.slice(0, 10) : "",
-          r.completed_by ? nameById.get(r.completed_by) ?? "Unknown" : "Unassigned",
-          r.title,
-          r.effort ?? "",
-          r.actual_cost ?? "",
-          periodById.get(r.yard_period_id) ?? "",
-          quadById.get(r.quadrant_id) ?? "",
-        ]
-          .map(esc)
-          .join(","),
-      );
-    }
-    // Lead with a UTF-8 BOM so Numbers/Excel pick up encoding for any accents.
-    const csv = "﻿" + lines.join("\r\n");
-    return new NextResponse(csv, {
-      status: 200,
-      headers: {
-        "Content-Type": "text/csv; charset=utf-8",
-        "Content-Disposition": `attachment; filename="yard-${from}-to-${to}.csv"`,
-      },
-    });
-  }
-
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Thor · M/Y Anne-Marie";
-  wb.created = new Date();
-
-  const ws = wb.addWorksheet("Yard throughput", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
-
-  ws.addRow(headers);
-
-  const widths = headers.map((h) => h.length);
-  const note = (i: number, v: unknown) => {
-    const len = v == null ? 0 : String(v).length;
-    if (len > widths[i]) widths[i] = len;
-  };
-
-  for (const r of rows ?? []) {
-    const completed = r.completed_at ? new Date(r.completed_at) : null;
-    const values: (string | number | Date | null)[] = [
-      completed,
-      r.completed_by ? nameById.get(r.completed_by) ?? "Unknown" : "Unassigned",
-      r.title,
-      r.effort ?? "",
-      r.actual_cost ?? null,
-      periodById.get(r.yard_period_id) ?? "",
-      quadById.get(r.quadrant_id) ?? "",
-    ];
-    const row = ws.addRow(values);
-    row.getCell(1).numFmt = "mm/dd/yyyy";
-    row.getCell(5).numFmt = "$#,##0.00";
-    values.forEach((v, i) => note(i, v));
-  }
-
-  const headerRow = ws.getRow(1);
-  headerRow.font = { bold: true };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFE2E8F0" },
-  };
-
-  ws.columns.forEach((col, i) => {
-    col.width = Math.min(widths[i] + 2, 40);
-  });
-
-  const buffer = await wb.xlsx.writeBuffer();
-  return new NextResponse(buffer as ArrayBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="yard-${from}-to-${to}.xlsx"`,
-    },
-  });
+  return csvResponse(`yard-${from}-to-${to}.csv`, headers, dataRows);
 }

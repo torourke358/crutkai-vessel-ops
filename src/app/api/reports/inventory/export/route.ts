@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import ExcelJS from "exceljs";
 import { createClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
+import { csvResponse } from "@/lib/csv";
 
 interface Row {
   id: string;
@@ -49,14 +49,6 @@ export async function GET(request: Request) {
 
   const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name ?? "Unknown"] as const));
 
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Thor · M/Y Anne-Marie";
-  wb.created = new Date();
-
-  const ws = wb.addWorksheet("Inventory churn", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
-
   const headers = [
     "Date",
     "Part",
@@ -66,56 +58,19 @@ export async function GET(request: Request) {
     "Source",
     "Recorded by",
   ];
-  ws.addRow(headers);
+  const dataRows: (string | number)[][] = (rows ?? []).map((r) => [
+    r.recorded_at.slice(0, 10),
+    r.inventory_item?.part_name ?? "(deleted item)",
+    r.inventory_item?.part_number ?? "",
+    r.qty_used,
+    r.inventory_item?.unit ?? "Units",
+    r.source_type,
+    r.recorded_by ? nameById.get(r.recorded_by) ?? "Unknown" : "—",
+  ]);
 
-  const widths = headers.map((h) => h.length);
-  const note = (i: number, v: unknown) => {
-    const len = v == null ? 0 : String(v).length;
-    if (len > widths[i]) widths[i] = len;
-  };
+  // Total row mirrors the old xlsx export.
+  const total = (rows ?? []).reduce((s, r) => s + r.qty_used, 0);
+  dataRows.push(["", "TOTAL", "", total, "", "", ""]);
 
-  let total = 0;
-  for (const r of rows ?? []) {
-    const values: (string | number | Date | null)[] = [
-      new Date(r.recorded_at),
-      r.inventory_item?.part_name ?? "(deleted item)",
-      r.inventory_item?.part_number ?? "",
-      r.qty_used,
-      r.inventory_item?.unit ?? "Units",
-      r.source_type,
-      r.recorded_by ? nameById.get(r.recorded_by) ?? "Unknown" : "—",
-    ];
-    const row = ws.addRow(values);
-    row.getCell(1).numFmt = "mm/dd/yyyy";
-    row.getCell(4).numFmt = "0";
-    total += r.qty_used;
-    values.forEach((v, i) => note(i, v));
-  }
-
-  // Total row.
-  const totalRow = ws.addRow(["", "TOTAL", "", total, "", "", ""]);
-  totalRow.font = { bold: true };
-  totalRow.getCell(4).numFmt = "0";
-
-  const headerRow = ws.getRow(1);
-  headerRow.font = { bold: true };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFE2E8F0" },
-  };
-
-  ws.columns.forEach((col, i) => {
-    col.width = Math.min(widths[i] + 2, 30);
-  });
-
-  const buffer = await wb.xlsx.writeBuffer();
-  return new NextResponse(buffer as ArrayBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="inventory-churn-${from}-to-${to}.xlsx"`,
-    },
-  });
+  return csvResponse(`inventory-churn-${from}-to-${to}.csv`, headers, dataRows);
 }

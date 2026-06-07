@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import ExcelJS from "exceljs";
 import { createClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
 import { computeStatus, STATUS_LABELS } from "@/lib/inventory";
+import { csvResponse } from "@/lib/csv";
 
-// Excel (.xlsx) export. All signed-in users can pull it — RLS still scopes
-// the read. Mirrors petty cash's xlsx style: bold + filled + frozen header,
-// auto-widths clamped, sentence-case header row. Components are joined into
-// a single semicolon-separated cell since a row can carry up to 8.
+// CSV export of the full inventory list. All signed-in users can pull it — RLS
+// still scopes the read. Apple Numbers (and Excel) read .csv natively.
+// Components are joined into a single semicolon-separated cell since a row can
+// carry up to 8.
 export async function GET() {
   const supabase = await createClient();
   const {
@@ -46,14 +46,6 @@ export async function GET() {
   const nameById = new Map((comps ?? []).map((c) => [c.id, c.name] as const));
   const data = rows ?? [];
 
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Thor · M/Y Anne-Marie";
-  wb.created = new Date();
-
-  const ws = wb.addWorksheet("Inventory", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
-
   const headers = [
     "Part name",
     "Part number",
@@ -66,23 +58,13 @@ export async function GET() {
     "Status",
     "Notes",
   ];
-  ws.addRow(headers);
-
-  // Track max content length per column for auto-width.
-  const widths = headers.map((h) => h.length);
-  const note = (i: number, v: unknown) => {
-    const len = v == null ? 0 : String(v).length;
-    if (len > widths[i]) widths[i] = len;
-  };
-
-  for (const r of data) {
+  const dataRows = data.map((r) => {
     const status = computeStatus(r.quantity, r.critical_threshold);
     const componentNames = (r.component_ids ?? [])
       .map((id) => nameById.get(id))
       .filter(Boolean)
       .join("; ");
-
-    const values: (string | number | null)[] = [
+    return [
       r.part_name,
       r.part_number ?? "",
       r.make ?? "",
@@ -90,39 +72,11 @@ export async function GET() {
       r.unit,
       r.location ?? "",
       componentNames,
-      r.critical_threshold ?? null,
+      r.critical_threshold ?? "",
       STATUS_LABELS[status],
       r.notes ?? "",
     ];
-    const row = ws.addRow(values);
-    row.getCell(4).numFmt = "0";  // Quantity
-    row.getCell(8).numFmt = "0";  // Critical threshold
-
-    values.forEach((v, i) => note(i, v));
-  }
-
-  // Bold + slate-200 fill + frozen header row.
-  const headerRow = ws.getRow(1);
-  headerRow.font = { bold: true };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFE2E8F0" },
-  };
-
-  // Auto-widths, clamped so a long Notes cell doesn't blow out the sheet.
-  ws.columns.forEach((col, i) => {
-    col.width = Math.min(widths[i] + 2, i === 9 ? 60 : 30);
   });
 
-  const buffer = await wb.xlsx.writeBuffer();
-
-  return new NextResponse(buffer as ArrayBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="inventory-${todayLocal()}.xlsx"`,
-    },
-  });
+  return csvResponse(`inventory-${todayLocal()}.csv`, headers, dataRows);
 }

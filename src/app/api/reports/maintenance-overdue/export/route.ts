@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import ExcelJS from "exceljs";
 import { createClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
 import { computeDueState } from "@/lib/maintenance";
+import { csvResponse } from "@/lib/csv";
 import type { DueType } from "@/lib/types";
 
 interface Row {
@@ -40,13 +40,6 @@ export async function GET() {
     }))
     .filter(({ due }) => due.state === "overdue" || due.state === "due");
 
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Thor · M/Y Anne-Marie";
-  wb.created = new Date();
-  const ws = wb.addWorksheet("Maintenance overdue", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
-
   const headers = [
     "Task",
     "Equipment",
@@ -55,39 +48,20 @@ export async function GET() {
     "Current hours",
     "Priority",
   ];
-  ws.addRow(headers);
+  const dataRows = overdue.map(({ task, due }) => [
+    task.title,
+    task.equipment?.name ?? "",
+    task.due_type,
+    task.due_type === "hours"
+      ? typeof due.dueAt === "number"
+        ? due.dueAt
+        : ""
+      : typeof due.dueAt === "string"
+        ? due.dueAt
+        : "",
+    task.equipment?.current_hours ?? "",
+    task.priority ?? "",
+  ]);
 
-  for (const { task, due } of overdue) {
-    ws.addRow([
-      task.title,
-      task.equipment?.name ?? "",
-      task.due_type,
-      task.due_type === "hours"
-        ? (typeof due.dueAt === "number" ? due.dueAt : null)
-        : (typeof due.dueAt === "string" ? due.dueAt : ""),
-      task.equipment?.current_hours ?? null,
-      task.priority ?? "",
-    ]);
-  }
-
-  const headerRow = ws.getRow(1);
-  headerRow.font = { bold: true };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFFFE4E6" }, // rose-100
-  };
-  ws.columns.forEach((c) => {
-    c.width = 24;
-  });
-
-  const buffer = await wb.xlsx.writeBuffer();
-  return new NextResponse(buffer as ArrayBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="maintenance-overdue-${today}.xlsx"`,
-    },
-  });
+  return csvResponse(`maintenance-overdue-${today}.csv`, headers, dataRows);
 }

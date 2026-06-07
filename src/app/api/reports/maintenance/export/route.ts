@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import ExcelJS from "exceljs";
 import { createClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
+import { csvResponse } from "@/lib/csv";
 
 interface Row {
   id: string;
@@ -47,14 +47,6 @@ export async function GET(request: Request) {
 
   const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name ?? "Unknown"] as const));
 
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Thor · M/Y Anne-Marie";
-  wb.created = new Date();
-
-  const ws = wb.addWorksheet("Maintenance", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
-
   const headers = [
     "Completed",
     "Crew member",
@@ -63,48 +55,14 @@ export async function GET(request: Request) {
     "Hours at completion",
     "Comments",
   ];
-  ws.addRow(headers);
+  const dataRows = (rows ?? []).map((r) => [
+    r.completed_at.slice(0, 10),
+    r.completed_by ? nameById.get(r.completed_by) ?? "Unknown" : "Unassigned",
+    r.maintenance_task?.title ?? "(deleted task)",
+    r.maintenance_task?.equipment?.name ?? "",
+    r.hours_at_completion ?? "",
+    r.comments ?? "",
+  ]);
 
-  const widths = headers.map((h) => h.length);
-  const note = (i: number, v: unknown) => {
-    const len = v == null ? 0 : String(v).length;
-    if (len > widths[i]) widths[i] = len;
-  };
-
-  for (const r of rows ?? []) {
-    const values: (string | number | Date | null)[] = [
-      new Date(r.completed_at),
-      r.completed_by ? nameById.get(r.completed_by) ?? "Unknown" : "Unassigned",
-      r.maintenance_task?.title ?? "(deleted task)",
-      r.maintenance_task?.equipment?.name ?? "",
-      r.hours_at_completion ?? null,
-      r.comments ?? "",
-    ];
-    const row = ws.addRow(values);
-    row.getCell(1).numFmt = "mm/dd/yyyy";
-    row.getCell(5).numFmt = "0";
-    values.forEach((v, i) => note(i, v));
-  }
-
-  const headerRow = ws.getRow(1);
-  headerRow.font = { bold: true };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFE2E8F0" },
-  };
-
-  ws.columns.forEach((col, i) => {
-    col.width = Math.min(widths[i] + 2, i === 5 ? 60 : 30);
-  });
-
-  const buffer = await wb.xlsx.writeBuffer();
-  return new NextResponse(buffer as ArrayBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="maintenance-${from}-to-${to}.xlsx"`,
-    },
-  });
+  return csvResponse(`maintenance-${from}-to-${to}.csv`, headers, dataRows);
 }

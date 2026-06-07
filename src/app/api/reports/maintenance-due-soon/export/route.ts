@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import ExcelJS from "exceljs";
 import { createClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
 import { computeDueState, isDueSoon } from "@/lib/maintenance";
+import { csvResponse } from "@/lib/csv";
 import type { DueType } from "@/lib/types";
 
 interface Row {
@@ -58,45 +58,15 @@ export async function GET() {
     dueSoon.push({ task: t, nextDue, remaining });
   }
 
-  const wb = new ExcelJS.Workbook();
-  wb.creator = "Thor · M/Y Anne-Marie";
-  wb.created = new Date();
-  const ws = wb.addWorksheet("Maintenance due soon", {
-    views: [{ state: "frozen", ySplit: 1 }],
-  });
-
   const headers = ["Task", "Equipment", "Due type", "Next due", "Remaining", "Priority"];
-  ws.addRow(headers);
+  const dataRows = dueSoon.map(({ task, nextDue, remaining }) => [
+    task.title,
+    task.equipment?.name ?? "",
+    task.due_type,
+    typeof nextDue === "number" ? nextDue : nextDue ?? "",
+    remaining,
+    task.priority ?? "",
+  ]);
 
-  for (const { task, nextDue, remaining } of dueSoon) {
-    ws.addRow([
-      task.title,
-      task.equipment?.name ?? "",
-      task.due_type,
-      typeof nextDue === "number" ? nextDue : nextDue ?? "",
-      remaining,
-      task.priority ?? "",
-    ]);
-  }
-
-  const headerRow = ws.getRow(1);
-  headerRow.font = { bold: true };
-  headerRow.fill = {
-    type: "pattern",
-    pattern: "solid",
-    fgColor: { argb: "FFFEF3C7" }, // amber-100
-  };
-  ws.columns.forEach((c) => {
-    c.width = 24;
-  });
-
-  const buffer = await wb.xlsx.writeBuffer();
-  return new NextResponse(buffer as ArrayBuffer, {
-    status: 200,
-    headers: {
-      "Content-Type":
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="maintenance-due-soon-${today}.xlsx"`,
-    },
-  });
+  return csvResponse(`maintenance-due-soon-${today}.csv`, headers, dataRows);
 }

@@ -59,14 +59,14 @@ export default async function InventoryPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Inventory</h1>
         <div className="flex items-center gap-3 text-sm">
-          {/* xlsx download needs a real navigation so Content-Disposition fires.
+          {/* CSV download needs a real navigation so Content-Disposition fires.
               Next's <Link> would client-side-route it. */}
           {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a
             href="/api/inventory/export"
             className="font-medium text-slate-500 hover:text-violet-700"
           >
-            Export Excel
+            Export Numbers
           </a>
           {role === "admin" && (
             <>

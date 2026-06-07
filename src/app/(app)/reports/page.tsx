@@ -307,7 +307,7 @@ export default async function ReportsPage({
             href="/api/reports/maintenance-overdue/export"
             className="text-sm font-medium text-violet-700 hover:underline"
           >
-            Excel
+            Numbers
           </a>
         </div>
         <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
@@ -367,7 +367,7 @@ export default async function ReportsPage({
             href="/api/reports/maintenance-due-soon/export"
             className="text-sm font-medium text-violet-700 hover:underline"
           >
-            Excel
+            Numbers
           </a>
         </div>
         <p className="text-xs text-slate-400">
@@ -429,7 +429,7 @@ export default async function ReportsPage({
             href="/api/reports/yard-todo/export"
             className="text-sm font-medium text-violet-700 hover:underline"
           >
-            Excel
+            Numbers
           </a>
         </div>
         <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
@@ -506,20 +506,12 @@ export default async function ReportsPage({
           <h3 className="text-sm font-semibold text-slate-900">
             Yard task throughput
           </h3>
-          <div className="flex items-center gap-3">
-            <a
-              href={`/api/reports/yard/export${qs}`}
-              className="text-sm font-medium text-violet-700 hover:underline"
-            >
-              Excel
-            </a>
-            <a
-              href={`/api/reports/yard/export${qs}&format=csv`}
-              className="text-sm font-medium text-violet-700 hover:underline"
-            >
-              CSV
-            </a>
-          </div>
+          <a
+            href={`/api/reports/yard/export${qs}`}
+            className="text-sm font-medium text-violet-700 hover:underline"
+          >
+            Numbers
+          </a>
         </div>
         <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
           {yardSummaryRows.length === 0 ? (
@@ -617,7 +609,7 @@ export default async function ReportsPage({
             href={`/api/reports/maintenance/export${qs}`}
             className="text-sm font-medium text-violet-700 hover:underline"
           >
-            Excel
+            Numbers
           </a>
         </div>
         <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
@@ -653,7 +645,7 @@ export default async function ReportsPage({
             href={`/api/reports/inventory/export${qs}`}
             className="text-sm font-medium text-violet-700 hover:underline"
           >
-            Excel
+            Numbers
           </a>
         </div>
         <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
