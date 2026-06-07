@@ -153,15 +153,18 @@ export default async function ReportsPage({
     supabase.from("user_profiles").select("id, full_name"),
     supabase.from("yard_periods").select("id, name"),
     supabase.from("yard_quadrants").select("id, name, color"),
-    // Yard cost by quadrant — every task that has a recorded cost (planned or
-    // actual, open or completed), grouped by quadrant. Deliberately NOT date-
-    // scoped: it's a snapshot of where yard money is committed right now.
-    // quadrants are the colored categories.
+    // Yard cost by quadrant — every task with a recorded cost (planned or
+    // actual, open or completed) in a NON-CLOSED period, grouped by quadrant.
+    // A snapshot of where yard money is committed on active refits; not date-
+    // scoped. quadrants are the colored categories.
     supabase
       .from("yard_tasks")
-      .select("quadrant_id, actual_cost")
+      .select("quadrant_id, actual_cost, period:yard_periods!inner(status)")
+      .neq("period.status", "closed")
       .not("actual_cost", "is", null)
-      .returns<{ quadrant_id: string; actual_cost: number | null }[]>(),
+      .returns<
+        { quadrant_id: string; actual_cost: number | null; period: { status: string } }[]
+      >(),
     supabase
       .from("inventory_items")
       .select("quantity, critical_threshold")
