@@ -106,6 +106,7 @@ export default async function ReportsPage({
     { data: quadrants },
     { data: yardCost },
     { data: inventoryItems },
+    { data: maintCostRows },
   ] = await Promise.all([
     supabase
       .from("maintenance_tasks")
@@ -166,6 +167,14 @@ export default async function ReportsPage({
       .from("inventory_items")
       .select("quantity, critical_threshold")
       .returns<{ quantity: number; critical_threshold: number | null }[]>(),
+    // Maintenance cost per active task + its system, for the spend pie.
+    supabase
+      .from("maintenance_tasks")
+      .select("cost, equipment:equipment(component:components(name))")
+      .eq("active", true)
+      .returns<
+        { cost: number | null; equipment: { component: { name: string } | null } | null }[]
+      >(),
   ]);
 
   const nameById = new Map(
@@ -307,6 +316,30 @@ export default async function ReportsPage({
     color: invColor[k],
   }));
 
+  // Maintenance spend by system — sum each active task's cost grouped by the
+  // equipment's system; show the top 7 systems and roll the rest into "Other".
+  const spendBySystem = new Map<string, number>();
+  for (const r of maintCostRows ?? []) {
+    const cost = r.cost ?? 0;
+    if (cost <= 0) continue;
+    const sys = r.equipment?.component?.name ?? "Unassigned";
+    spendBySystem.set(sys, (spendBySystem.get(sys) ?? 0) + cost);
+  }
+  const SPEND_PALETTE = [
+    "#7c3aed", "#0ea5e9", "#10b981", "#f59e0b",
+    "#ef4444", "#ec4899", "#14b8a6", "#94a3b8",
+  ];
+  const sortedSpend = [...spendBySystem.entries()].sort((a, b) => b[1] - a[1]);
+  const maintSpendSlices = sortedSpend.slice(0, 7).map(([label, value], i) => ({
+    label,
+    value,
+    color: SPEND_PALETTE[i],
+  }));
+  const spendRest = sortedSpend.slice(7).reduce((s, [, v]) => s + v, 0);
+  if (spendRest > 0) {
+    maintSpendSlices.push({ label: "Other", value: spendRest, color: SPEND_PALETTE[7] });
+  }
+
   const qs = `?from=${from}&to=${to}`;
 
   return (
@@ -329,6 +362,20 @@ export default async function ReportsPage({
             slices={maintStatusSlices}
             totalLabel="Tasks"
             emptyLabel="No maintenance tasks yet."
+          />
+        </div>
+      </section>
+
+      {/* Maintenance spend by system — task costs grouped by system (top 7 + Other) */}
+      <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-slate-900">
+          Maintenance spend by system
+        </h3>
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
+          <PieChart
+            slices={maintSpendSlices}
+            valueFormat={(n) => formatAmount(n, "USD")}
+            emptyLabel="No maintenance costs entered yet."
           />
         </div>
       </section>
