@@ -87,6 +87,7 @@ export interface Equipment {
   image_path: string | null;        // legacy single hero photo (kept until app code drops it)
   image_paths: string[];            // gallery of photo paths under equipment-photos
   critical: boolean;
+  cost: number | null;              // purchase / replacement cost in USD
   ga_x: number | null;              // pin position on /public/ga-schematic.svg (0..100 % of width)
   ga_y: number | null;              // pin position (0..100 % of height)
   notes: string | null;
@@ -147,6 +148,7 @@ export interface MaintenanceTask {
   last_done_date: string | null;
   hours_at_last_done: number | null;
   assigned_to: string | null;
+  cost: number | null;              // estimated cost of the task in USD
   active: boolean;
   last_due_alerted_on: string | null;
   last_overdue_alerted_on: string | null;

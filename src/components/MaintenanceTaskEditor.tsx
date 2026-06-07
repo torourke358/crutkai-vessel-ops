@@ -37,6 +37,7 @@ export default function MaintenanceTaskEditor({
           last_done_date: initial.last_done_date ?? "",
           hours_at_last_done: initial.hours_at_last_done != null ? String(initial.hours_at_last_done) : "",
           assigned_to: initial.assigned_to ?? "",
+          cost: initial.cost == null ? "" : String(initial.cost),
         }
       : { ...emptyTaskForm, equipment_id: defaultEquipmentId ?? "" },
   );

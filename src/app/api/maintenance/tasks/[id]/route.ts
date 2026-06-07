@@ -13,6 +13,7 @@ const patchSchema = z.object({
   last_done_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
   hours_at_last_done: z.number().int().min(0).nullable().optional(),
   assigned_to: z.string().uuid().nullable().optional(),
+  cost: z.number().min(0).nullable().optional(),
   active: z.boolean().optional(),
 });
 

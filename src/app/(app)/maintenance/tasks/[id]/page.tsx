@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth";
-import { formatDate, todayLocal } from "@/lib/format";
+import { formatAmount, formatDate, todayLocal } from "@/lib/format";
 import { computeDueState } from "@/lib/maintenance";
 import MaintenanceTaskEditor from "@/components/MaintenanceTaskEditor";
 import CompleteTaskDialog from "@/components/CompleteTaskDialog";
@@ -113,6 +113,11 @@ export default async function MaintenanceTaskDetailPage({
         {task.priority && (
           <p className="text-sm text-slate-700">
             <span className="font-medium">Priority:</span> {task.priority}
+          </p>
+        )}
+        {task.cost != null && (
+          <p className="text-sm text-slate-700">
+            <span className="font-medium">Cost:</span> {formatAmount(task.cost, "USD")}
           </p>
         )}
         {task.description && (

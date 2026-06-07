@@ -5,7 +5,7 @@ import { getUserRole } from "@/lib/auth";
 import EquipmentEditor from "@/components/EquipmentEditor";
 import EquipmentDocuments from "@/components/EquipmentDocuments";
 import HourReadingForm from "@/components/HourReadingForm";
-import { formatDate, todayLocal } from "@/lib/format";
+import { formatAmount, formatDate, todayLocal } from "@/lib/format";
 import { computeDueState } from "@/lib/maintenance";
 import type {
   Component,
@@ -196,6 +196,14 @@ export default async function EquipmentDetailPage({
               })()}
             </p>
           )}
+        </div>
+        <div className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-100">
+          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+            Cost
+          </p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums text-slate-900">
+            {equipment.cost != null ? formatAmount(equipment.cost, "USD") : "—"}
+          </p>
         </div>
       </div>
 

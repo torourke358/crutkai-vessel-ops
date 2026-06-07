@@ -140,7 +140,7 @@ export default function InventoryForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
           <label htmlFor="unit_price" className={labelClass}>
-            Unit price (USD)
+            Cost (USD)
           </label>
           <input
             id="unit_price"

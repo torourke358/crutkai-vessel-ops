@@ -14,6 +14,7 @@ export interface MaintenanceTaskFormValues {
   last_done_date: string;
   hours_at_last_done: string;
   assigned_to: string;
+  cost: string;
 }
 
 const inputClass =
@@ -196,6 +197,26 @@ export default function MaintenanceTaskForm({
             ))}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="cost" className={labelClass}>
+          Cost (USD)
+        </label>
+        <input
+          id="cost"
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min="0"
+          placeholder="(unset)"
+          value={values.cost}
+          onChange={(e) => onChange({ cost: e.target.value })}
+          className={inputClass}
+        />
+        <p className="mt-0.5 text-xs text-slate-400">
+          Estimated cost of this task.
+        </p>
       </div>
 
       <div>
@@ -408,6 +429,7 @@ export const emptyTaskForm: MaintenanceTaskFormValues = {
   last_done_date: "",
   hours_at_last_done: "",
   assigned_to: "",
+  cost: "",
 };
 
 export function taskFormToBody(v: MaintenanceTaskFormValues) {
@@ -429,5 +451,6 @@ export function taskFormToBody(v: MaintenanceTaskFormValues) {
         ? Number(v.hours_at_last_done)
         : null,
     assigned_to: v.assigned_to || null,
+    cost: v.cost === "" ? null : Number(v.cost),
   };
 }

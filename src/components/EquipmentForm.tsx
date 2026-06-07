@@ -15,6 +15,7 @@ export interface EquipmentFormValues {
   commissioned_date: string;
   image_paths: string[];
   critical: boolean;
+  cost: string;
   ga_x: number | null;
   ga_y: number | null;
   notes: string;
@@ -116,6 +117,26 @@ export default function EquipmentForm({
             placeholder="(leave blank if unknown)"
           />
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="cost" className={labelClass}>
+          Cost (USD)
+        </label>
+        <input
+          id="cost"
+          type="number"
+          inputMode="decimal"
+          step="0.01"
+          min="0"
+          placeholder="(unset)"
+          value={values.cost}
+          onChange={(e) => onChange({ cost: e.target.value })}
+          className={inputClass}
+        />
+        <p className="mt-0.5 text-xs text-slate-400">
+          Purchase or replacement cost.
+        </p>
       </div>
 
       <div>
@@ -255,6 +276,7 @@ export const emptyEquipmentForm: EquipmentFormValues = {
   commissioned_date: "",
   image_paths: [],
   critical: false,
+  cost: "",
   ga_x: null,
   ga_y: null,
   notes: "",
@@ -272,6 +294,7 @@ export function equipmentValuesToBody(v: EquipmentFormValues) {
     commissioned_date: v.commissioned_date || null,
     image_paths: v.image_paths,
     critical: v.critical,
+    cost: v.cost === "" ? null : Number(v.cost),
     ga_x: v.ga_x,
     ga_y: v.ga_y,
     notes: v.notes.trim() || null,

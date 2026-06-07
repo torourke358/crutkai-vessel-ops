@@ -16,6 +16,7 @@ const bodySchema = z
     last_done_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
     hours_at_last_done: z.number().int().min(0).nullable().optional(),
     assigned_to: z.string().uuid().nullable().optional(),
+    cost: z.number().min(0).nullable().optional(),
   })
   .refine(
     (b) =>
@@ -55,6 +56,7 @@ export async function POST(request: Request) {
       last_done_date: b.last_done_date ?? null,
       hours_at_last_done: b.hours_at_last_done ?? null,
       assigned_to: b.assigned_to ?? null,
+      cost: b.cost ?? null,
     })
     .select()
     .single();

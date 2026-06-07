@@ -40,6 +40,7 @@ export default function EquipmentEditor({
                 ? [initial.image_path]
                 : [],
           critical: initial.critical ?? false,
+          cost: initial.cost == null ? "" : String(initial.cost),
           ga_x: initial.ga_x ?? null,
           ga_y: initial.ga_y ?? null,
           notes: initial.notes ?? "",
