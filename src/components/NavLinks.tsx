@@ -6,6 +6,7 @@ import NotificationBell from "@/components/NotificationBell";
 import SignOutButton from "@/components/SignOutButton";
 
 const TABS: { href: string; label: string }[] = [
+  { href: "/", label: "Daily" },
   { href: "/inventory", label: "Inventory" },
   { href: "/equipment", label: "Equipment" },
   { href: "/maintenance", label: "Maintenance" },

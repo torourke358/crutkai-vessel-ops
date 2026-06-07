@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { todayLocal } from "@/lib/format";
-import { computeDueState } from "@/lib/maintenance";
+import { loadMaintenanceDashboardTasks } from "@/lib/maintenance";
+import MaintenanceDashboard from "@/components/MaintenanceDashboard";
 import type { YardPeriod } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export default async function HomePage() {
     { count: noStock },
     { count: critical },
     { count: inventoryOk },
-    { data: maintTasks },
+    maintTasks,
     { data: activePeriod },
   ] = await Promise.all([
     supabase.auth.getUser(),
@@ -33,23 +34,9 @@ export default async function HomePage() {
       .select("*", { count: "exact", head: true })
       .eq("alert_state", "above")
       .gt("quantity", 0),
-    supabase
-      .from("maintenance_tasks")
-      .select(
-        "id, due_type, interval_days, interval_hours, last_done_date, hours_at_last_done, equipment:equipment(current_hours)",
-      )
-      .eq("active", true)
-      .returns<
-        {
-          id: string;
-          due_type: "calendar" | "hours";
-          interval_days: number | null;
-          interval_hours: number | null;
-          last_done_date: string | null;
-          hours_at_last_done: number | null;
-          equipment: { current_hours: number | null } | null;
-        }[]
-      >(),
+    // Same loader the /maintenance dashboard uses — single query path so the
+    // Daily list and the summary card never disagree.
+    loadMaintenanceDashboardTasks(supabase, today),
     // Prefer an active period; fall back to the most recent planned one so a
     // period created with status='planned' (the default) still shows up
     // before someone manually promotes it. 'active' < 'planned' alphabetically
@@ -67,20 +54,9 @@ export default async function HomePage() {
   let dueToday = 0;
   let overdue = 0;
   let maintenanceOk = 0;
-  for (const t of maintTasks ?? []) {
-    const due = computeDueState(
-      {
-        due_type: t.due_type,
-        interval_days: t.interval_days,
-        interval_hours: t.interval_hours,
-        last_done_date: t.last_done_date,
-        hours_at_last_done: t.hours_at_last_done,
-      },
-      t.equipment?.current_hours ?? null,
-      today,
-    );
-    if (due.state === "due") dueToday++;
-    else if (due.state === "overdue") overdue++;
+  for (const t of maintTasks) {
+    if (t.state === "due") dueToday++;
+    else if (t.state === "overdue") overdue++;
     else maintenanceOk++;
   }
 
@@ -119,6 +95,23 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-6">
+      {/* Daily to-do — lead with what's actionable today. Same three sections
+          as the /maintenance dashboard (time due / hours due / overdue). */}
+      <section className="space-y-2">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-semibold text-slate-900">
+            Today&apos;s maintenance
+          </h1>
+          <Link
+            href="/maintenance"
+            className="text-sm font-medium text-slate-500 hover:text-violet-700"
+          >
+            Full dashboard
+          </Link>
+        </div>
+        <MaintenanceDashboard tasks={maintTasks} asOf={today} />
+      </section>
+
       {/* Vessel banner — matches petty-cash's "Anne Marie" header. */}
       <div className="relative h-40 overflow-hidden rounded-2xl bg-slate-200 sm:h-48">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -135,7 +128,7 @@ export default async function HomePage() {
       </div>
 
       <div>
-        <h1 className="text-2xl font-semibold text-slate-900">Welcome aboard.</h1>
+        <h2 className="text-2xl font-semibold text-slate-900">Welcome aboard.</h2>
         <p className="mt-1 text-sm text-slate-500">
           Signed in as <span className="font-medium">{email}</span>.
         </p>

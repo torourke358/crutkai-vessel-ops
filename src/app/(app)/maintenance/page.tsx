@@ -2,37 +2,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth";
 import { todayLocal } from "@/lib/format";
-import { computeDueState } from "@/lib/maintenance";
-import MaintenanceDashboard, {
-  type MaintenanceDashboardTask,
-} from "@/components/MaintenanceDashboard";
+import { loadMaintenanceDashboardTasks } from "@/lib/maintenance";
+import MaintenanceDashboard from "@/components/MaintenanceDashboard";
 
 export const dynamic = "force-dynamic";
-
-interface TaskRow {
-  id: string;
-  equipment_id: string;
-  title: string;
-  priority: "low" | "moderate" | "high" | "critical" | null;
-  due_type: "calendar" | "hours";
-  interval_days: number | null;
-  interval_hours: number | null;
-  last_done_date: string | null;
-  hours_at_last_done: number | null;
-  active: boolean;
-  equipment: {
-    name: string;
-    current_hours: number | null;
-    component: { name: string } | null;
-  } | null;
-}
-
-interface HistoryRow {
-  task_id: string;
-  completed_at: string;
-  hours_at_completion: number | null;
-  comments: string | null;
-}
 
 export default async function MaintenancePage({
   searchParams,
@@ -45,60 +18,7 @@ export default async function MaintenancePage({
   const supabase = await createClient();
   const role = await getUserRole();
 
-  const { data: tasks } = await supabase
-    .from("maintenance_tasks")
-    .select(
-      "id, equipment_id, title, priority, due_type, interval_days, interval_hours, last_done_date, hours_at_last_done, active, equipment:equipment(name, current_hours, component:components(name))",
-    )
-    .eq("active", true)
-    .order("title", { ascending: true })
-    .returns<TaskRow[]>();
-
-  // Last sign-off per task — for the "Hours completed" / "Date completed" cell.
-  const taskIds = (tasks ?? []).map((t) => t.id);
-  const lastHistoryById = new Map<string, HistoryRow>();
-  if (taskIds.length > 0) {
-    const { data: histRows } = await supabase
-      .from("maintenance_history")
-      .select("task_id, completed_at, hours_at_completion, comments")
-      .in("task_id", taskIds)
-      .order("completed_at", { ascending: false })
-      .returns<HistoryRow[]>();
-    for (const h of histRows ?? []) {
-      if (!lastHistoryById.has(h.task_id)) lastHistoryById.set(h.task_id, h);
-    }
-  }
-
-  const enriched: MaintenanceDashboardTask[] = (tasks ?? []).map((t) => {
-    const due = computeDueState(
-      {
-        due_type: t.due_type,
-        interval_days: t.interval_days,
-        interval_hours: t.interval_hours,
-        last_done_date: t.last_done_date,
-        hours_at_last_done: t.hours_at_last_done,
-      },
-      t.equipment?.current_hours ?? null,
-      asOf,
-    );
-    const last = lastHistoryById.get(t.id);
-    return {
-      id: t.id,
-      title: t.title,
-      priority: t.priority,
-      due_type: t.due_type,
-      equipmentName: t.equipment?.name ?? "Unknown",
-      componentName: t.equipment?.component?.name ?? null,
-      currentHours: t.equipment?.current_hours ?? null,
-      lastDoneDate: t.last_done_date,
-      lastDoneHours: t.hours_at_last_done,
-      lastCompletedAt: last?.completed_at ?? null,
-      lastCompletedHours: last?.hours_at_completion ?? null,
-      lastCompletedComments: last?.comments ?? null,
-      state: due.state,
-      dueAt: due.dueAt,
-    };
-  });
+  const enriched = await loadMaintenanceDashboardTasks(supabase, asOf);
 
   return (
     <div className="space-y-5">
