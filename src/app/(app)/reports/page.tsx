@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatAmount, formatDate, todayLocal } from "@/lib/format";
 import { computeDueState, isDueSoon } from "@/lib/maintenance";
 import ReportsDateRange from "@/components/ReportsDateRange";
+import PieChart from "@/components/PieChart";
+import { computeStatus, STATUS_LABELS, type InventoryStatus } from "@/lib/inventory";
 import type {
   DueType,
   YardTaskStatus,
@@ -103,6 +105,7 @@ export default async function ReportsPage({
     { data: periods },
     { data: quadrants },
     { data: yardCost },
+    { data: inventoryItems },
   ] = await Promise.all([
     supabase
       .from("maintenance_tasks")
@@ -159,6 +162,10 @@ export default async function ReportsPage({
       .lte("completed_at", toIso)
       .not("actual_cost", "is", null)
       .returns<{ quadrant_id: string; actual_cost: number | null }[]>(),
+    supabase
+      .from("inventory_items")
+      .select("quantity, critical_threshold")
+      .returns<{ quantity: number; critical_threshold: number | null }[]>(),
   ]);
 
   const nameById = new Map(
@@ -187,20 +194,6 @@ export default async function ReportsPage({
     costByName.set(name, cur);
   }
   const costSlices = [...costByName.values()].sort((a, b) => b.total - a.total);
-  const costTotal = costSlices.reduce((s, x) => s + x.total, 0);
-
-  // Build the conic-gradient stops (no chart library — CSS pie). Use prefix
-  // sums so there's no mutable accumulator captured during render. Slice count
-  // is tiny (a handful of quadrants), so the O(n^2) walk is free.
-  const costStops = costSlices.map((s, i) => {
-    const before = costSlices
-      .slice(0, i)
-      .reduce((sum, x) => sum + x.total, 0);
-    const start = (before / costTotal) * 100;
-    const end = ((before + s.total) / costTotal) * 100;
-    return `${s.color} ${start}% ${end}%`;
-  });
-  const costGradient = `conic-gradient(${costStops.join(", ")})`;
 
   // -------- OPERATIONAL (current state) --------
 
@@ -283,6 +276,37 @@ export default async function ReportsPage({
   }
   const partsSummaryRows = [...partsSummary.values()].sort((a, b) => b.qty - a.qty);
 
+  // ---- Current-state pie breakdowns (maintenance due-state, inventory stock).
+  const maintCounts = { overdue: 0, due: 0, dueSoon: 0, ok: 0 };
+  for (const t of maintTasks ?? []) {
+    const d = computeDueState(t, t.equipment?.current_hours ?? null, today);
+    if (d.state === "overdue") maintCounts.overdue++;
+    else if (d.state === "due") maintCounts.due++;
+    else if (isDueSoon(t, t.equipment?.current_hours ?? null, today)) maintCounts.dueSoon++;
+    else maintCounts.ok++;
+  }
+  const maintStatusSlices = [
+    { label: "Overdue", value: maintCounts.overdue, color: "#e11d48" },
+    { label: "Due", value: maintCounts.due, color: "#f59e0b" },
+    { label: "Due soon", value: maintCounts.dueSoon, color: "#0ea5e9" },
+    { label: "OK", value: maintCounts.ok, color: "#10b981" },
+  ];
+
+  const invColor: Record<InventoryStatus, string> = {
+    ok: "#10b981",
+    critical: "#f59e0b",
+    no_stock: "#e11d48",
+  };
+  const invCounts: Record<InventoryStatus, number> = { ok: 0, critical: 0, no_stock: 0 };
+  for (const r of inventoryItems ?? []) {
+    invCounts[computeStatus(r.quantity, r.critical_threshold)]++;
+  }
+  const inventoryStatusSlices = (Object.keys(invCounts) as InventoryStatus[]).map((k) => ({
+    label: STATUS_LABELS[k],
+    value: invCounts[k],
+    color: invColor[k],
+  }));
+
   const qs = `?from=${from}&to=${to}`;
 
   return (
@@ -296,6 +320,30 @@ export default async function ReportsPage({
       <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
         Current state
       </h2>
+
+      {/* Maintenance status — tasks by due-state */}
+      <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-slate-900">Maintenance status</h3>
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
+          <PieChart
+            slices={maintStatusSlices}
+            totalLabel="Tasks"
+            emptyLabel="No maintenance tasks yet."
+          />
+        </div>
+      </section>
+
+      {/* Inventory status — items by stock level */}
+      <section className="space-y-2">
+        <h3 className="text-sm font-semibold text-slate-900">Inventory status</h3>
+        <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
+          <PieChart
+            slices={inventoryStatusSlices}
+            totalLabel="Items"
+            emptyLabel="No inventory items yet."
+          />
+        </div>
+      </section>
 
       {/* Maintenance overdue */}
       <section className="space-y-2">
@@ -552,51 +600,15 @@ export default async function ReportsPage({
           Yard cost by quadrant
         </h3>
         <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-100">
-          {costSlices.length === 0 ? (
-            <p className="p-4 text-center text-sm text-slate-400">
-              No yard costs recorded in this range.
-            </p>
-          ) : (
-            <div className="flex flex-col items-center gap-6 sm:flex-row">
-              <div
-                className="h-44 w-44 shrink-0 rounded-full ring-1 ring-slate-200"
-                style={{ background: costGradient }}
-                role="img"
-                aria-label="Yard cost by quadrant"
-              />
-              <ul className="w-full space-y-1.5">
-                {costSlices.map((s) => {
-                  const pct = costTotal > 0 ? (s.total / costTotal) * 100 : 0;
-                  return (
-                    <li
-                      key={s.name}
-                      className="flex items-center justify-between gap-3 text-sm"
-                    >
-                      <span className="flex min-w-0 items-center gap-2">
-                        <span
-                          className="h-3 w-3 shrink-0 rounded-sm ring-1 ring-black/5"
-                          style={{ backgroundColor: s.color }}
-                        />
-                        <span className="truncate text-slate-700">{s.name}</span>
-                      </span>
-                      <span className="shrink-0 tabular-nums text-slate-500">
-                        {formatAmount(s.total, "USD")}
-                        <span className="ml-2 text-slate-400">
-                          {pct.toFixed(0)}%
-                        </span>
-                      </span>
-                    </li>
-                  );
-                })}
-                <li className="flex items-center justify-between gap-3 border-t border-slate-100 pt-1.5 text-sm font-medium">
-                  <span className="text-slate-700">Total</span>
-                  <span className="tabular-nums text-slate-900">
-                    {formatAmount(costTotal, "USD")}
-                  </span>
-                </li>
-              </ul>
-            </div>
-          )}
+          <PieChart
+            slices={costSlices.map((s) => ({
+              label: s.name,
+              value: s.total,
+              color: s.color,
+            }))}
+            valueFormat={(n) => formatAmount(n, "USD")}
+            emptyLabel="No yard costs recorded in this range."
+          />
         </div>
       </section>
 
