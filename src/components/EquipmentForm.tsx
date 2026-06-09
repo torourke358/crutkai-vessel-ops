@@ -197,7 +197,7 @@ export default function EquipmentForm({
           />
           <p className="mt-1 text-xs text-slate-400">
             When the unit first went into service (may pre-date when you
-            started tracking it in Thor).
+            started tracking it in Runa).
           </p>
         </div>
       </div>

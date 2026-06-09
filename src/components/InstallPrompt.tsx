@@ -101,7 +101,7 @@ export default function InstallPrompt() {
       <div className="min-w-0 flex-1 text-sm">
         {mode === "button" ? (
           <>
-            <p className="font-medium">Add Thor to your home screen</p>
+            <p className="font-medium">Add Runa to your home screen</p>
             <p className="text-white/80">Open it like an app, full-screen.</p>
             <button
               onClick={install}
@@ -112,7 +112,7 @@ export default function InstallPrompt() {
           </>
         ) : (
           <>
-            <p className="font-medium">Add Thor to your home screen</p>
+            <p className="font-medium">Add Runa to your home screen</p>
             <p className="text-white/85">
               Tap the Share button <ShareIcon /> at the bottom of Safari, then
               choose <span className="font-medium">Add to Home Screen</span>.

@@ -28,7 +28,7 @@ const TIM_EMAIL = "torourke358@hotmail.com";
 // 1) Flip app_settings to the verified domain.
 const SETTINGS = [
   ["vessel_email_from", "thor@smartaiforaccountants.com"],
-  ["vessel_email_from_name", "Thor · M/Y Anne-Marie"],
+  ["vessel_email_from_name", "Runa · M/Y Anne-Marie"],
 ];
 for (const [key, value] of SETTINGS) {
   const { error } = await admin
@@ -52,7 +52,7 @@ const { data: inserted, error: insErr } = await admin
     channel: "email",
     recipient_id: TIM_USER_ID,
     recipient_email: TIM_EMAIL,
-    subject: "Thor smoke test — Resend domain is live",
+    subject: "Runa smoke test — Resend domain is live",
     body: `If you're reading this in your inbox (or junk), the Resend domain swap worked.\n\nDelivery path:\n  Supabase notifications row → Vercel cron → Resend → ${TIM_EMAIL}\n\nNo action required — this is a one-shot test from the smoke script.`,
     related_type: "smoke_test",
     status: "pending",

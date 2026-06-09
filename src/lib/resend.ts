@@ -20,7 +20,7 @@ export function buildEmailHtml(subject: string, body: string): string {
   <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;padding:20px;border:1px solid #e2e8f0">
     <h1 style="margin:0 0 8px;font-size:18px">${subject}</h1>
     <p style="margin:0;color:#334155;white-space:pre-wrap">${safeBody}</p>
-    <p style="margin-top:24px;font-size:12px;color:#94a3b8">Thor · M/Y Anne-Marie</p>
+    <p style="margin-top:24px;font-size:12px;color:#94a3b8">Runa · M/Y Anne-Marie</p>
   </div>
 </body></html>`;
 }

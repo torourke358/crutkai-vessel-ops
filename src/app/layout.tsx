@@ -2,14 +2,14 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Thor",
+  title: "Runa",
   description:
     "Inventory, equipment, maintenance, and yard period management for M/Y Anne-Marie.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Thor",
+    title: "Runa",
   },
   icons: {
     icon: "/icons/icon-192.png",

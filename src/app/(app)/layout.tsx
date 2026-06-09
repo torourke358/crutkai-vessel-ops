@@ -50,7 +50,7 @@ export default async function AppLayout({
               alt=""
               className="h-8 w-8 rounded-lg object-cover"
             />
-            Thor
+            Runa
           </Link>
           <NavLinks role={role} />
         </div>

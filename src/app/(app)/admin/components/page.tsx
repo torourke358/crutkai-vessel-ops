@@ -26,7 +26,7 @@ export default async function AdminComponentsPage() {
         </Link>
       </div>
       <p className="text-sm text-slate-500">
-        Edit the systems list used everywhere on Thor — the System dropdown on
+        Edit the systems list used everywhere on Runa — the System dropdown on
         equipment and the Related components picker on inventory both read from
         here.
       </p>

@@ -1,10 +1,10 @@
-// Send a one-off test email through the Thor notifications + Resend pipeline.
+// Send a one-off test email through the Runa notifications + Resend pipeline.
 // Usage:
 //   node scripts/send-test-email.mjs <recipient_user_id> <recipient_email> "<subject>" "<body>"
 //
 // Example:
 //   node scripts/send-test-email.mjs fb1ecc78-05b3-4d34-8220-4562b256f7bb \
-//     crutkai@mac.com "Thor Inventory Alert Is Live" "Body text..."
+//     crutkai@mac.com "Runa Inventory Alert Is Live" "Body text..."
 
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";

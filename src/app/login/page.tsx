@@ -44,11 +44,11 @@ export default function LoginPage() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/icons/icon-192.png"
-            alt="Thor's hammer"
+            alt="Runa logo"
             className="h-24 w-24 rounded-2xl ring-1 ring-slate-200"
           />
           <h1 className="mt-4 text-5xl font-bold tracking-tight text-slate-900">
-            Thor
+            Runa
           </h1>
           <p className="mt-1 text-base font-medium text-slate-700">
             Anne-Marie Vessel Ops
