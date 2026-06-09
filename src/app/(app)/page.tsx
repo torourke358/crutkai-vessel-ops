@@ -121,9 +121,11 @@ export default async function HomePage() {
           className="h-full w-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
-        <div className="absolute bottom-3 left-4 text-white drop-shadow">
-          <p className="text-lg font-semibold">Anne-Marie</p>
-          <p className="text-xs opacity-80">Thor — yacht ops</p>
+        <div className="absolute bottom-3 left-4 right-4 text-white drop-shadow-lg">
+          <p className="text-3xl font-bold leading-none sm:text-4xl">Runa</p>
+          <p className="mt-1 text-lg font-semibold leading-tight sm:text-xl">
+            M/Y Anne-Marie
+          </p>
         </div>
       </div>
 
