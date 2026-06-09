@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { HIDDEN_CREW_ID } from "@/lib/crew";
 import DefectForm from "@/components/DefectForm";
 import type { Equipment, UserProfile } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export default async function NewDefectPage() {
       .from("user_profiles")
       .select("id, full_name")
       .eq("active", true)
+      .neq("id", HIDDEN_CREW_ID)
       .order("full_name")
       .returns<Pick<UserProfile, "id" | "full_name">[]>(),
   ]);

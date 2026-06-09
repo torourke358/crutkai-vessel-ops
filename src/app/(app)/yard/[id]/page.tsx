@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { HIDDEN_CREW_ID } from "@/lib/crew";
 import { getUserRole } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import YardBoard, { type BoardQuadrant } from "@/components/YardBoard";
@@ -47,6 +48,7 @@ export default async function YardPeriodDetailPage({
       .from("user_profiles")
       .select("id, full_name")
       .eq("active", true)
+      .neq("id", HIDDEN_CREW_ID)
       .order("full_name")
       .returns<Pick<UserProfile, "id" | "full_name">[]>(),
   ]);

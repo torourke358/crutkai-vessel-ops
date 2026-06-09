@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { HIDDEN_CREW_ID } from "@/lib/crew";
 import { getUserRole } from "@/lib/auth";
 import MaintenanceTaskEditor from "@/components/MaintenanceTaskEditor";
 
@@ -16,7 +17,7 @@ export default async function NewMaintenanceTaskPage({
   const supabase = await createClient();
   const [{ data: equipment }, { data: users }] = await Promise.all([
     supabase.from("equipment").select("id, name").eq("active", true).order("name"),
-    supabase.from("user_profiles").select("id, full_name").eq("active", true).order("full_name"),
+    supabase.from("user_profiles").select("id, full_name").eq("active", true).neq("id", HIDDEN_CREW_ID).order("full_name"),
   ]);
 
   return (

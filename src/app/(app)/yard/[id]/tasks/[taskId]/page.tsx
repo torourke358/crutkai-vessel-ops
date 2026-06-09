@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { HIDDEN_CREW_ID } from "@/lib/crew";
 import { getUserRole } from "@/lib/auth";
 import YardTaskEditor from "@/components/YardTaskEditor";
 import CompleteYardTaskDialog from "@/components/CompleteYardTaskDialog";
@@ -26,7 +27,7 @@ export default async function YardTaskDetailPage({
         .eq("yard_period_id", id)
         .order("display_order")
         .returns<YardQuadrant[]>(),
-      supabase.from("user_profiles").select("id, full_name").eq("active", true),
+      supabase.from("user_profiles").select("id, full_name").eq("active", true).neq("id", HIDDEN_CREW_ID),
       supabase
         .from("inventory_items")
         .select("id, part_name, part_number, quantity, unit")

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { HIDDEN_CREW_ID } from "@/lib/crew";
 import { getUserRole } from "@/lib/auth";
 import { formatAmount, formatDate, todayLocal } from "@/lib/format";
 import { computeDueState } from "@/lib/maintenance";
@@ -35,7 +36,7 @@ export default async function MaintenanceTaskDetailPage({
     await Promise.all([
       supabase.from("equipment").select().eq("id", task.equipment_id).single<Equipment>(),
       supabase.from("equipment").select("id, name").eq("active", true).order("name"),
-      supabase.from("user_profiles").select("id, full_name").eq("active", true).order("full_name"),
+      supabase.from("user_profiles").select("id, full_name").eq("active", true).neq("id", HIDDEN_CREW_ID).order("full_name"),
       supabase
         .from("maintenance_history")
         .select("id, task_id, equipment_id, completed_at, completed_by, hours_at_completion, comments")
