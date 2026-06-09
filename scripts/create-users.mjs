@@ -36,12 +36,6 @@ const users = [
     role: "admin",
   },
   {
-    email: "torourke358@hotmail.com",
-    password: "pettycash2026",
-    full_name: "Tim O'Rourke",
-    role: "admin",
-  },
-  {
     email: "krutkai@mac.com",
     password: "pettycash2026",
     full_name: "Kim Rutkai",
