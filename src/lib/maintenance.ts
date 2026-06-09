@@ -141,17 +141,15 @@ export async function loadMaintenanceDashboardTasks(
   }
 
   return (tasks ?? []).map((t) => {
-    const due = computeDueState(
-      {
-        due_type: t.due_type,
-        interval_days: t.interval_days,
-        interval_hours: t.interval_hours,
-        last_done_date: t.last_done_date,
-        hours_at_last_done: t.hours_at_last_done,
-      },
-      t.equipment?.current_hours ?? null,
-      asOf,
-    );
+    const core = {
+      due_type: t.due_type,
+      interval_days: t.interval_days,
+      interval_hours: t.interval_hours,
+      last_done_date: t.last_done_date,
+      hours_at_last_done: t.hours_at_last_done,
+    };
+    const currentHours = t.equipment?.current_hours ?? null;
+    const due = computeDueState(core, currentHours, asOf);
     const last = lastHistoryById.get(t.id);
     return {
       id: t.id,
@@ -168,6 +166,7 @@ export async function loadMaintenanceDashboardTasks(
       lastCompletedComments: last?.comments ?? null,
       state: due.state,
       dueAt: due.dueAt,
+      dueSoon: isDueSoon(core, currentHours, asOf),
     };
   });
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
-import { todayLocal } from "@/lib/format";
+import { todayLocal, formatDate } from "@/lib/format";
 import { loadMaintenanceDashboardTasks } from "@/lib/maintenance";
 import MaintenanceDashboard from "@/components/MaintenanceDashboard";
 import type { YardPeriod } from "@/lib/types";
@@ -60,6 +60,17 @@ export default async function HomePage() {
     else maintenanceOk++;
   }
 
+  // Tasks approaching due within the next 14 days (calendar) or within 10% of
+  // their hours interval — not yet due, so they aren't in the list above.
+  const comingUp = maintTasks
+    .filter((t) => t.dueSoon)
+    .sort((a, b) => {
+      if (a.due_type !== b.due_type) return a.due_type === "calendar" ? -1 : 1;
+      if (a.due_type === "calendar")
+        return String(a.dueAt).localeCompare(String(b.dueAt));
+      return Number(a.dueAt) - Number(b.dueAt);
+    });
+
   // Auto-promote a planned period to active once its start_date arrives.
   // Service-role client because RLS restricts yard_period writes to admins,
   // and we want this to fire for any viewer who hits the dashboard.
@@ -110,6 +121,56 @@ export default async function HomePage() {
           </Link>
         </div>
         <MaintenanceDashboard tasks={maintTasks} asOf={today} />
+      </section>
+
+      {/* Coming up — maintenance approaching within the next 14 days (calendar)
+          or within 10% of the hours interval. Not yet "due", so it isn't in the
+          Today list above. */}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-slate-900">
+          Coming up{" "}
+          <span className="font-normal text-slate-400">
+            · next 14 days ({comingUp.length})
+          </span>
+        </h2>
+        <div className="overflow-hidden rounded-2xl bg-white ring-1 ring-slate-100">
+          {comingUp.length === 0 ? (
+            <p className="p-4 text-center text-sm text-slate-400">
+              Nothing due in the next 14 days.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {comingUp.map((t) => (
+                <li key={t.id} className="p-3">
+                  <Link
+                    href={`/maintenance/tasks/${t.id}`}
+                    className="flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium text-slate-900">
+                        {t.title}
+                      </p>
+                      <p className="truncate text-sm text-slate-500">
+                        {t.equipmentName}
+                        {t.componentName && (
+                          <span className="text-slate-400">
+                            {" "}
+                            · {t.componentName}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-xs text-slate-500">
+                      {t.due_type === "calendar"
+                        ? `Due ${formatDate(t.dueAt as string)}`
+                        : `Due at ${t.dueAt} hrs · now ${t.currentHours ?? "—"}`}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </section>
 
       {/* Vessel banner — matches petty-cash's "Anne Marie" header. */}

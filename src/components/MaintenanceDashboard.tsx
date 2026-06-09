@@ -20,6 +20,7 @@ export interface MaintenanceDashboardTask {
   lastCompletedComments: string | null;
   state: DueState;
   dueAt: string | number | null;
+  dueSoon: boolean;
 }
 
 const STATE_BADGE: Record<DueState, string> = {
