@@ -111,7 +111,7 @@ export default function YardTaskDetailPanel({
   }
 
   async function remove() {
-    if (!confirm(`Delete "${draft.title}"?`)) return;
+    if (!confirm(`Delete "${draft.title}"? This can't be undone.`)) return;
     await fetch(`/api/yard-periods/${periodId}/tasks/${draft.id}`, {
       method: "DELETE",
     });

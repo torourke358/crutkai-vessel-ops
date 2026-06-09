@@ -92,7 +92,7 @@ export default function ChecklistTemplateEditor({
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this item?")) return;
+    if (!confirm("Delete this item? This can't be undone.")) return;
     const res = await fetch(
       `/api/checklists/templates/${template.id}/items/${id}`,
       { method: "DELETE" },

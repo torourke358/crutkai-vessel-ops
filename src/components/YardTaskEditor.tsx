@@ -118,7 +118,7 @@ export default function YardTaskEditor({
 
   async function remove() {
     if (!initial) return;
-    if (!confirm(`Delete "${initial.title}"?`)) return;
+    if (!confirm(`Delete "${initial.title}"? This can't be undone.`)) return;
     setDeleting(true);
     const res = await fetch(`/api/yard-periods/${periodId}/tasks/${initial.id}`, {
       method: "DELETE",

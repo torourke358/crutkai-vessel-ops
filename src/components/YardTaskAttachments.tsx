@@ -70,7 +70,7 @@ export default function YardTaskAttachments({
   }
 
   async function remove(d: YardTaskDocument) {
-    if (!confirm(`Delete "${d.file_name}"?`)) return;
+    if (!confirm(`Delete "${d.file_name}"? This can't be undone.`)) return;
     const res = await fetch(
       `/api/yard-tasks/${yardTaskId}/documents/${d.id}`,
       { method: "DELETE" },
