@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/auth";
 import { formatDate } from "@/lib/format";
 import type { YardPeriod } from "@/lib/types";
+import YardAssistant from "@/components/YardAssistant";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,8 @@ export default async function YardPeriodsPage() {
 
   return (
     <div className="space-y-4 pb-8">
+      <YardAssistant />
+
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold text-slate-900">Yard periods</h1>
         {role === "admin" && (
