@@ -24,6 +24,8 @@ Rules:
   (inventory the vessel bought).
 - If the records contain nothing relevant, say you have no record of it.
 - NEVER invent dates, costs, items, or quantities. Keep it concise and factual.
+- Write in plain prose — no markdown headings, bold, or bullet symbols (the chat
+  shows your text raw).
 `.trim();
 
 const STOPWORDS = new Set([
