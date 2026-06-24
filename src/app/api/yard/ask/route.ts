@@ -14,7 +14,8 @@ const MODEL = "claude-sonnet-4-6";
 const SYSTEM_PROMPT = `
 You are the Runa yacht's maintenance assistant. Answer the crew's question using
 ONLY the records you are given (yard tasks, maintenance tasks, parts consumed on
-jobs, and inventory purchases — each with dates and, where present, USD costs).
+jobs, inventory purchases, equipment, defects/faults, and checklist history —
+each with dates and, where present, USD costs).
 
 Rules:
 - Cite specific dates and dollar amounts straight from the records.
@@ -65,8 +66,25 @@ interface ConsumedRow {
   source_type: string | null;
   inventory_item: ItemLite | ItemLite[] | null;
 }
-const one = (x: ItemLite | ItemLite[] | null): ItemLite | null =>
-  Array.isArray(x) ? x[0] ?? null : x;
+interface ItemBody {
+  body: string | null;
+}
+interface ChecklistItemNote {
+  note: string | null;
+  checked: boolean;
+  checked_at: string | null;
+  template_item: ItemBody | ItemBody[] | null;
+}
+interface RunRow {
+  id: string;
+  template_id: string;
+  started_at: string;
+  completed_at: string | null;
+  notes: string | null;
+}
+function one<T>(x: T | T[] | null | undefined): T | null {
+  return Array.isArray(x) ? x[0] ?? null : x ?? null;
+}
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
 export async function POST(req: Request) {
@@ -92,7 +110,14 @@ export async function POST(req: Request) {
     });
   }
 
-  const [{ data: yardTasks }, { data: maint }, { data: inventory }] = await Promise.all([
+  const [
+    { data: yardTasks },
+    { data: maint },
+    { data: inventory },
+    { data: equipment },
+    { data: defects },
+    { data: templates },
+  ] = await Promise.all([
     supabase
       .from("yard_tasks")
       .select("title, description, status, actual_cost, completed_at, due_date, created_at")
@@ -111,6 +136,22 @@ export async function POST(req: Request) {
       .or(orFilter(["part_name", "make", "supplier", "notes"], keywords))
       .order("created_at", { ascending: false })
       .limit(40),
+    supabase
+      .from("equipment")
+      .select("name, make, model, serial, location_on_vessel, current_hours, commissioned_date, cost, critical, active, notes")
+      .or(orFilter(["name", "make", "model", "serial", "location_on_vessel", "notes"], keywords))
+      .limit(30),
+    supabase
+      .from("defects")
+      .select("title, description, status, severity, resolution, resolved_at, created_at")
+      .or(orFilter(["title", "description", "resolution"], keywords))
+      .order("created_at", { ascending: false })
+      .limit(30),
+    supabase
+      .from("checklist_templates")
+      .select("id, title, description, category")
+      .or(orFilter(["title", "description", "category"], keywords))
+      .limit(20),
   ]);
 
   // Parts actually consumed on jobs for the matched inventory items — the most
@@ -126,6 +167,34 @@ export async function POST(req: Request) {
       .limit(40)
       .returns<ConsumedRow[]>();
     consumed = data ?? [];
+  }
+
+  // Checklist history for matched templates: when each was run, plus any item
+  // notes (free-text notes the crew left on a checklist item).
+  const tplTitle = new Map((templates ?? []).map((t) => [t.id, t.title] as const));
+  const tplIds = [...tplTitle.keys()];
+  let runs: RunRow[] = [];
+  let itemNotes: ChecklistItemNote[] = [];
+  if (tplIds.length) {
+    const { data: runRows } = await supabase
+      .from("checklist_runs")
+      .select("id, template_id, started_at, completed_at, notes")
+      .in("template_id", tplIds)
+      .order("started_at", { ascending: false })
+      .limit(30)
+      .returns<RunRow[]>();
+    runs = runRows ?? [];
+    const runIds = runs.map((rn) => rn.id);
+    if (runIds.length) {
+      const { data: itemRows } = await supabase
+        .from("checklist_run_items")
+        .select("note, checked, checked_at, template_item:checklist_template_items(body)")
+        .in("run_id", runIds)
+        .not("note", "is", null)
+        .limit(40)
+        .returns<ChecklistItemNote[]>();
+      itemNotes = itemRows ?? [];
+    }
   }
 
   // Compact, server-side summary — only the fields the model needs.
@@ -167,6 +236,39 @@ export async function POST(req: Request) {
         used_on: p.source_type, // "yard" | "maintenance"
       };
     }),
+    equipment: (equipment ?? []).map((e) => ({
+      name: e.name,
+      make: e.make,
+      model: e.model,
+      serial: e.serial,
+      location: e.location_on_vessel,
+      hours: e.current_hours,
+      commissioned: e.commissioned_date,
+      cost_usd: e.cost,
+      critical: e.critical,
+      active: e.active,
+    })),
+    defects: (defects ?? []).map((d) => ({
+      title: d.title,
+      notes: d.description,
+      status: d.status,
+      severity: d.severity,
+      resolution: d.resolution,
+      reported_on: d.created_at,
+      resolved_on: d.resolved_at,
+    })),
+    checklist_runs: runs.map((rn) => ({
+      checklist: tplTitle.get(rn.template_id) ?? "checklist",
+      started: rn.started_at,
+      completed: rn.completed_at,
+      notes: rn.notes,
+    })),
+    checklist_item_notes: itemNotes.map((it) => ({
+      item: one(it.template_item)?.body,
+      checked: it.checked,
+      note: it.note,
+      when: it.checked_at,
+    })),
   };
 
   let answer = "";
@@ -198,7 +300,10 @@ export async function POST(req: Request) {
     summary.usage_yard_tasks.length +
     summary.usage_maintenance.length +
     summary.purchases_inventory.length +
-    summary.usage_parts_consumed.length;
+    summary.usage_parts_consumed.length +
+    summary.equipment.length +
+    summary.defects.length +
+    summary.checklist_runs.length;
 
   return NextResponse.json({ answer, matched: found });
 }

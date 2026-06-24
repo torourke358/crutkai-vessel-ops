@@ -7,8 +7,9 @@ import { useState } from "react";
 // the dates and costs (e.g. "when was the last time I used varnish?").
 const SUGGESTIONS = [
   "When did I last use varnish?",
-  "How much have I spent on antifouling?",
-  "When did I last buy impellers?",
+  "What's the serial on the main engine?",
+  "Any open defects?",
+  "When did I last run the engine-room checklist?",
 ];
 
 export default function YardAssistant() {
@@ -62,8 +63,8 @@ export default function YardAssistant() {
       {open && (
         <div className="space-y-3 px-4 pb-4">
           <p className="text-sm text-slate-500">
-            Ask about past work, costs, or purchases — e.g. when you last used a product and what
-            it cost.
+            Ask about past work, costs, purchases, equipment, defects, or checklist history — e.g.
+            when you last used a product and what it cost.
           </p>
 
           <form
