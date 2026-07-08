@@ -19,6 +19,14 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  // Extend the layout under the iPhone notch / Dynamic Island / home indicator.
+  // Without this, iOS reports every env(safe-area-inset-*) as 0, so the
+  // .safe-top header padding and the bottom safe-area padding collapse and the
+  // app fails to size edge-to-edge (the iPhone 16 "dynamic sizing" bug).
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
