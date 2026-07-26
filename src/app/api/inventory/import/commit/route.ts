@@ -14,6 +14,9 @@ const rowSchema = z.object({
   component_ids: z.array(z.string().uuid()).max(8).optional(),
   critical_threshold: z.number().int().min(0).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
+  // Optional — sent by the spreadsheet import; the PDF flow omits them.
+  unit_price: z.number().min(0).nullable().optional(),
+  supplier: z.string().trim().max(200).nullable().optional(),
 });
 
 const bodySchema = z.object({
@@ -54,6 +57,8 @@ export async function POST(request: Request) {
         component_ids: r.component_ids ?? [],
         critical_threshold: r.critical_threshold ?? null,
         notes: r.notes ?? null,
+        unit_price: r.unit_price ?? null,
+        supplier: r.supplier ?? null,
       })
       .select()
       .single();

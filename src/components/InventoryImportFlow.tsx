@@ -14,6 +14,9 @@ interface ExtractedRow {
   location: string | null;
   related_component: string | null; // raw AI value before mapping
   critical_threshold: number | null;
+  // Present on spreadsheet extractions only.
+  unit_price?: number | null;
+  supplier?: string | null;
 }
 
 interface CommitRow {
@@ -25,6 +28,8 @@ interface CommitRow {
   location: string | null;
   component_ids: string[];
   critical_threshold: number | null;
+  unit_price: number | null;
+  supplier: string | null;
 }
 
 export default function InventoryImportFlow({ components }: { components: Component[] }) {
@@ -39,6 +44,52 @@ export default function InventoryImportFlow({ components }: { components: Compon
     if (!name) return null;
     const lower = name.toLowerCase();
     return components.find((c) => c.name.toLowerCase() === lower)?.id ?? null;
+  }
+
+  function mapExtracted(rows: ExtractedRow[]): CommitRow[] {
+    return rows.map((r) => ({
+      part_name: r.part_name,
+      part_number: r.part_number,
+      make: r.make,
+      quantity: r.quantity ?? 0,
+      unit: r.unit || "Units",
+      location: r.location,
+      component_ids: nameToComponentId(r.related_component)
+        ? [nameToComponentId(r.related_component) as string]
+        : [],
+      critical_threshold: r.critical_threshold,
+      unit_price: r.unit_price ?? null,
+      supplier: r.supplier ?? null,
+    }));
+  }
+
+  // Spreadsheet source (CSV / XLSX) — parsed server-side, same preview shape.
+  async function handleSpreadsheet(file: File) {
+    setLoading(true);
+    setExtractError(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/inventory/import/spreadsheet", {
+        method: "POST",
+        body: form,
+      });
+      if (!res.ok) {
+        setExtractError("Spreadsheet parsing failed.");
+        return;
+      }
+      const body = (await res.json()) as
+        | { rows: ExtractedRow[] }
+        | { error: string; raw?: string };
+      if ("error" in body) {
+        setExtractError(body.error + (body.raw ? `: ${body.raw.slice(0, 200)}` : ""));
+        return;
+      }
+      setRows(mapExtracted(body.rows));
+      setStep("preview");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleFile(file: File) {
@@ -76,19 +127,7 @@ export default function InventoryImportFlow({ components }: { components: Compon
           return;
         }
 
-        const mapped: CommitRow[] = body.rows.map((r) => ({
-          part_name: r.part_name,
-          part_number: r.part_number,
-          make: r.make,
-          quantity: r.quantity ?? 0,
-          unit: r.unit || "Units",
-          location: r.location,
-          component_ids: nameToComponentId(r.related_component)
-            ? [nameToComponentId(r.related_component) as string]
-            : [],
-          critical_threshold: r.critical_threshold,
-        }));
-        setRows(mapped);
+        setRows(mapExtracted(body.rows));
         setStep("preview");
       } finally {
         setLoading(false);
@@ -133,21 +172,45 @@ export default function InventoryImportFlow({ components }: { components: Compon
       </div>
 
       {step === "upload" && (
-        <div className="space-y-3 rounded-2xl bg-white p-5 ring-1 ring-slate-100">
-          <p className="text-sm text-slate-500">
-            Upload a Seahub inventory export PDF or a single-page image. Claude
-            vision parses the rows; you verify and edit before committing.
-          </p>
-          <input
-            type="file"
-            accept="application/pdf,image/*"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
-            }}
-            disabled={loading}
-            className="block w-full text-sm text-slate-700"
-          />
+        <div className="space-y-4">
+          <div className="space-y-3 rounded-2xl bg-white p-5 ring-1 ring-slate-100">
+            <p className="text-sm font-medium text-slate-700">PDF or photo</p>
+            <p className="text-sm text-slate-500">
+              Upload a Seahub inventory export PDF or a single-page image. Claude
+              vision parses the rows; you verify and edit before committing.
+            </p>
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+              }}
+              disabled={loading}
+              className="block w-full text-sm text-slate-700"
+            />
+          </div>
+
+          <div className="space-y-3 rounded-2xl bg-white p-5 ring-1 ring-slate-100">
+            <p className="text-sm font-medium text-slate-700">Spreadsheet</p>
+            <p className="text-sm text-slate-500">
+              Upload a CSV or Excel (.xlsx) file. The first row must be headers
+              — columns like part name, make, qty, unit, location, supplier,
+              unit price and critical threshold are matched automatically.
+            </p>
+            <input
+              type="file"
+              accept=".csv,.xlsx,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleSpreadsheet(f);
+                e.target.value = "";
+              }}
+              disabled={loading}
+              className="block w-full text-sm text-slate-700"
+            />
+          </div>
+
           {loading && <p className="text-sm text-slate-500">Reading…</p>}
           {extractError && (
             <p className="rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700">
@@ -232,6 +295,27 @@ export default function InventoryImportFlow({ components }: { components: Compon
                       </option>
                     ))}
                   </select>
+                </div>
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  <input
+                    value={r.supplier ?? ""}
+                    onChange={(e) => updateRow(i, { supplier: e.target.value || null })}
+                    placeholder="Supplier"
+                    className="rounded-lg border border-slate-200 px-2 py-1 text-sm"
+                  />
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={r.unit_price ?? ""}
+                    onChange={(e) =>
+                      updateRow(i, {
+                        unit_price: e.target.value === "" ? null : Number(e.target.value),
+                      })
+                    }
+                    placeholder="Unit price (USD)"
+                    className="rounded-lg border border-slate-200 px-2 py-1 text-sm tabular-nums"
+                  />
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-500">
                   <label className="flex items-center gap-1">
