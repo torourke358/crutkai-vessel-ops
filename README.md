@@ -6,9 +6,32 @@ PWA for M/Y Anne-Marie. Unifies inventory, equipment, maintenance, and yard peri
 
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS v4)
 - **Supabase** — Auth + Postgres + Storage (RLS-everywhere)
-- **Anthropic Claude** (`claude-sonnet-4-6`) for PDF-to-row migration
+- **Anthropic Claude** (`claude-sonnet-4-6`) for PDF-to-row migration; `claude-sonnet-5` for the dry-dock planner vision analysis
 - **Resend** for transactional email notifications
 - **Vercel** — hosting + cron (Pro plan for 1-min outbox cadence)
+
+## Dry-dock disassembly planner
+
+`/yard/planner` (admin): photograph an area of the vessel before a yard
+period; Claude vision identifies the visible equipment and returns the
+fastest safe disassembly ORDER, flagging blockers — e.g. an AC unit that must
+come out before engine work because the AC contractor has a ~2-week lead
+time. Plans are editable drafts (`disassembly_plans` + `disassembly_steps`,
+photos in the private `disassembly-photos` bucket — migration
+`15_drydock_planner.sql`), then convert one-task-per-step into a yard
+period's Engineering quadrant.
+
+## Spreadsheet imports
+
+- **Inventory** — `/inventory/import` now takes CSV/XLSX alongside PDF/photo;
+  headers (part name, make, qty, unit, location, supplier, unit price,
+  critical threshold…) are matched heuristically, then the usual preview →
+  commit flow runs.
+- **Prior yard periods** — `/yard/import` (admin): upload a past period's
+  task list (CSV/XLSX), edit the parsed rows, and commit; creates a closed
+  yard period with tasks mapped to quadrants by area name (Engineering
+  fallback). Parsers live in `src/lib/csv.ts` (`parseCsv`) and
+  `src/lib/spreadsheet.ts` (exceljs).
 
 ## Local dev
 

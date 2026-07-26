@@ -40,3 +40,8 @@ devserver.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local scratch — feedback notes, chat transcripts, one-off ops SQL
+Yard.txt
+*Claude Chats.txt
+RUN_ME_*.sql
