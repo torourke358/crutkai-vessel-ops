@@ -239,6 +239,37 @@ export interface YardTaskDocument {
   uploaded_at: string;
 }
 
+// Dry-dock disassembly planner: photos of an area → AI-ordered plan → tasks.
+export type DisassemblyPlanStatus = "draft" | "final" | "converted";
+
+export interface DisassemblyPlan {
+  id: string;
+  created_by: string | null;
+  yard_period_id: string | null;
+  area_name: string;
+  status: DisassemblyPlanStatus;
+  photo_paths: string[];        // storage paths under disassembly-photos bucket
+  summary: string | null;
+  model: string | null;         // AI model that produced the plan
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DisassemblyStep {
+  id: string;
+  plan_id: string;
+  seq: number;                  // 1-based disassembly order
+  title: string;
+  description: string | null;
+  equipment_label: string | null;         // e.g. "Port main engine"
+  depends_on_seqs: number[];              // seq values that must finish first
+  is_blocking: boolean;                   // must be scheduled before work starts
+  external_contractor: string | null;     // e.g. "AC / refrigeration"
+  contractor_lead_time_days: number | null;
+  est_hours: number | null;
+  flag_reason: string | null;             // why this step is flagged
+}
+
 export type DefectStatus = "open" | "in_progress" | "resolved";
 export type DefectSeverity = "low" | "normal" | "high" | "critical";
 
