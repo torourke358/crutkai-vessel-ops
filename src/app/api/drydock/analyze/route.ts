@@ -78,6 +78,9 @@ prose — with exactly this shape:
     }
   ]
 }
+
+Keep every description under 250 characters. Output nothing outside the JSON
+object.
 `.trim();
 
 function stripFences(text: string): string {
@@ -149,7 +152,9 @@ export async function POST(request: Request) {
   try {
     message = await anthropic.messages.create({
       model: MODEL,
-      max_tokens: 8192,
+      // Whole-vessel walkarounds produce 15-20 step plans; 8192 truncated the
+      // JSON mid-array and the whole analysis failed to parse.
+      max_tokens: 16000,
       system: SYSTEM_PROMPT,
       messages: [
         {
@@ -164,6 +169,16 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("anthropic call failed", err);
     return NextResponse.json({ error: "analysis_failed" }, { status: 500 });
+  }
+
+  if (message.stop_reason === "max_tokens") {
+    console.error("drydock analyze truncated at max_tokens", {
+      photos: photo_paths.length,
+    });
+    return NextResponse.json(
+      { error: "parse_failed", raw: "AI response hit the output limit — try fewer photos per plan" },
+      { status: 200 },
+    );
   }
 
   const textBlock = message.content.find((b) => b.type === "text");
