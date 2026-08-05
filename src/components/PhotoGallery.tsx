@@ -44,15 +44,22 @@ export default function PhotoGallery({
     };
   }, [values, bucket, supabase, urls]);
 
-  async function handleFile(file: File) {
-    if (values.length >= max) {
+  // Uploads a batch sequentially and commits all new paths in ONE onChange —
+  // per-file onChange calls would clobber each other via the stale closure.
+  async function handleFiles(files: File[]) {
+    const room = max - values.length;
+    if (room <= 0) {
       setError(`Max ${max} photos.`);
       return;
     }
-    setError(null);
+    const batch = files.slice(0, room);
+    setError(
+      batch.length < files.length
+        ? `Max ${max} photos — only the first ${room} were added.`
+        : null,
+    );
     setBusy(true);
     try {
-      const prepared = await prepareImage(file);
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -60,15 +67,20 @@ export default function PhotoGallery({
         setError("Not signed in.");
         return;
       }
-      const path = `${user.id}/${crypto.randomUUID()}.jpg`;
-      const { error: upErr } = await supabase.storage
-        .from(bucket)
-        .upload(path, prepared, { contentType: "image/jpeg" });
-      if (upErr) {
-        setError(`Upload failed: ${upErr.message}`);
-        return;
+      const added: string[] = [];
+      for (const file of batch) {
+        const prepared = await prepareImage(file);
+        const path = `${user.id}/${crypto.randomUUID()}.jpg`;
+        const { error: upErr } = await supabase.storage
+          .from(bucket)
+          .upload(path, prepared, { contentType: "image/jpeg" });
+        if (upErr) {
+          setError(`Upload failed: ${upErr.message}`);
+          break;
+        }
+        added.push(path);
       }
-      onChange([...values, path]);
+      if (added.length > 0) onChange([...values, ...added]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Couldn't read image.");
     } finally {
@@ -145,7 +157,7 @@ export default function PhotoGallery({
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) handleFile(f);
+                if (f) handleFiles([f]);
                 e.target.value = "";
               }}
             />
@@ -155,11 +167,12 @@ export default function PhotoGallery({
             <input
               type="file"
               accept="image/*"
+              multiple
               disabled={busy}
               className="hidden"
               onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
+                const fs = Array.from(e.target.files ?? []);
+                if (fs.length > 0) handleFiles(fs);
                 e.target.value = "";
               }}
             />

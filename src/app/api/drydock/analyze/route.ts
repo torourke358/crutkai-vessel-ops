@@ -45,6 +45,13 @@ Hard rules — these override everything else:
   assume 14 days unless visual evidence suggests otherwise.
 - Make dependencies explicit via depends_on_seqs (the seq numbers that must be
   complete before a step can start).
+- OVERHEAD CHECK: for every heavy item that will be lifted or craned out
+  (engines, gensets, tanks), look straight up in the photos before writing its
+  step. ANYTHING mounted above it — exhaust ducting, AC/chiller units, cable
+  trays, piping runs — blocks the lift path and must be removed in an earlier
+  step, with that step's seq listed in the lift step's depends_on_seqs. Never
+  state that an item has a clear overhead path unless the photos genuinely
+  show nothing above it.
 - Do not invent equipment you cannot see or reasonably infer from the photos.
 `.trim();
 

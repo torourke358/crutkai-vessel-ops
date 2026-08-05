@@ -38,15 +38,19 @@ function loadImage(blob: Blob): Promise<HTMLImageElement> {
 }
 
 // Returns a JPEG Blob ready for upload, downscaled if wider than MAX_WIDTH.
+// Always re-encodes non-JPEG sources (PNG screenshots etc.): uploads are
+// stored and sent to the vision API as image/jpeg, and mismatched bytes make
+// the API reject the whole analysis.
 export async function prepareImage(file: File): Promise<Blob> {
   const jpeg = await toJpegIfHeic(file);
   const img = await loadImage(jpeg);
 
-  if (img.width <= MAX_WIDTH) return jpeg;
+  const alreadyJpeg = /image\/jpe?g/i.test(jpeg.type);
+  if (img.width <= MAX_WIDTH && alreadyJpeg) return jpeg;
 
-  const scale = MAX_WIDTH / img.width;
+  const scale = img.width > MAX_WIDTH ? MAX_WIDTH / img.width : 1;
   const canvas = document.createElement("canvas");
-  canvas.width = MAX_WIDTH;
+  canvas.width = Math.round(img.width * scale);
   canvas.height = Math.round(img.height * scale);
   const ctx = canvas.getContext("2d");
   if (!ctx) return jpeg;
