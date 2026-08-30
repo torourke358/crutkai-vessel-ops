@@ -1,6 +1,6 @@
 {
   "crons": [
     { "path": "/api/cron/maintenance-check", "schedule": "5 4 * * *" },
-    { "path": "/api/cron/send-outbox", "schedule": "* * * * *" }
+    { "path": "/api/cron/send-outbox", "schedule": "*/5 * * * *" }
   ]
 }

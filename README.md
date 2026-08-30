@@ -6,9 +6,9 @@ PWA for M/Y Anne-Marie. Unifies inventory, equipment, maintenance, and yard peri
 
 - **Next.js 16** (App Router, TypeScript, Tailwind CSS v4)
 - **Supabase** — Auth + Postgres + Storage (RLS-everywhere)
-- **Anthropic Claude** (`claude-sonnet-4-6`) for PDF-to-row migration; `claude-sonnet-5` for the dry-dock planner vision analysis
+- **Anthropic Claude** (`claude-sonnet-5`) for PDF-to-row migration and the dry-dock planner vision analysis
 - **Resend** for transactional email notifications
-- **Vercel** — hosting + cron (Pro plan for 1-min outbox cadence)
+- **Vercel** — hosting + cron (outbox drains every 5 min; up to 25 emails per run)
 
 ## Dry-dock disassembly planner
 

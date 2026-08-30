@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Vessel zones lookup + equipment.zone_id
+-- Runa — Vessel zones lookup + equipment.zone_id
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Safe to re-run.
 -- ============================================

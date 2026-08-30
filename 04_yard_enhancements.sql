@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Yard period enhancements: reminder date, resources, default
+-- Runa — Yard period enhancements: reminder date, resources, default
 -- quadrants on period creation.
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu (shared with crutkai-petty-cash)

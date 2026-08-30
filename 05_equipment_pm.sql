@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Equipment PM enhancements
+-- Runa — Equipment PM enhancements
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu (shared with crutkai-petty-cash)
 -- Safe to re-run.
@@ -7,7 +7,7 @@
 
 -- 1) Commissioned date — separate from created_at. Records when the
 --    physical equipment was first installed on the vessel (may pre-date
---    when we started tracking it in Thor).
+--    when we started tracking it in Runa).
 alter table equipment add column if not exists commissioned_date date;
 
 -- 2) Idempotency column for the "10% before PM due" warning so the daily

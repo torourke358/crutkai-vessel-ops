@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Phase 2 polish: defect photo gallery
+-- Runa — Phase 2 polish: defect photo gallery
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Safe to re-run.
 -- ============================================

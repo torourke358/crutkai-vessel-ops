@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Inventory enhancements: multi-component (up to 8) + location photo
+-- Runa — Inventory enhancements: multi-component (up to 8) + location photo
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu (shared with crutkai-petty-cash)
 -- Safe to re-run.

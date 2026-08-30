@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { cleanEnv } from "@/lib/supabase/env";
 import { getUserRole } from "@/lib/auth";
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "claude-sonnet-5";
 
 const EXTRACT_PROMPT = `You are reading a Seahub inventory export PDF for a yacht.
 

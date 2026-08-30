@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Dry-dock disassembly planner (photo → AI plan → yard tasks)
+-- Runa — Dry-dock disassembly planner (photo → AI plan → yard tasks)
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu
 -- Safe to re-run.

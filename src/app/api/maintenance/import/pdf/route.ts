@@ -4,7 +4,7 @@ import { PDFDocument } from "pdf-lib";
 import { cleanEnv } from "@/lib/supabase/env";
 import { getUserRole } from "@/lib/auth";
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "claude-sonnet-5";
 const PAGES_PER_CHUNK = 3; // ~3 PDF pages per Claude call keeps output token usage manageable
 
 const EXTRACT_PROMPT = `You are reading a Seahub MAINTENANCE TASKS export PDF for a yacht.

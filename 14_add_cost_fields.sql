@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — add per-item Cost fields to Equipment and Maintenance tasks.
+-- Runa — add per-item Cost fields to Equipment and Maintenance tasks.
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu
 -- Safe to re-run.

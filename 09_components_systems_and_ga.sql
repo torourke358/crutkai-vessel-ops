@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — GA pin coords on equipment + standard yacht systems seed
+-- Runa — GA pin coords on equipment + standard yacht systems seed
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu
 -- Safe to re-run.

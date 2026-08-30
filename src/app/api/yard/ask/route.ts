@@ -9,7 +9,7 @@ import { cleanEnv } from "@/lib/supabase/env";
 // inventory purchases, then Claude narrates the dates and dollar amounts. It
 // only describes records that exist — it never invents history.
 
-const MODEL = "claude-sonnet-4-6";
+const MODEL = "claude-sonnet-5";
 
 const SYSTEM_PROMPT = `
 You are the Runa yacht's maintenance assistant. Answer the crew's question using

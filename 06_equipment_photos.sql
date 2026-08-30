@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Equipment photo upload
+-- Runa — Equipment photo upload
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu (shared with crutkai-petty-cash)
 -- Safe to re-run.

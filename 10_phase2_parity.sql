@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Phase 2: Seahub + Priority Matrix parity
+-- Runa — Phase 2: Seahub + Priority Matrix parity
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu
 -- Safe to re-run.

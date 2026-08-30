@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Round 1 (Craig) feedback: equipment cleanup
+-- Runa — Round 1 (Craig) feedback: equipment cleanup
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu
 -- Safe to re-run.

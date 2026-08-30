@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Equipment module: Seahub parity additions
+-- Runa — Equipment module: Seahub parity additions
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Target: project ref trplphistdsfuecnnzdu
 -- Safe to re-run.

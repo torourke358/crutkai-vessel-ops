@@ -1,5 +1,5 @@
 -- ============================================
--- Thor — Deactivate "Bonig" component (assumed Seahub OCR typo)
+-- Runa — Deactivate "Bonig" component (assumed Seahub OCR typo)
 -- Run in: Supabase Dashboard → SQL Editor → New query
 -- Safe to re-run.
 -- ============================================
