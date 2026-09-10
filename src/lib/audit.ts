@@ -21,3 +21,17 @@ export async function writeAudit(entry: AuditEntry): Promise<void> {
     console.error("audit_log write failed", { entry, error });
   }
 }
+
+// Bulk variant for import commits. A 500-row import that calls writeAudit()
+// per row costs 500 sequential round-trips and blows the function timeout
+// long before it finishes; one insert of 500 entries costs one. Same
+// swallow-and-log contract as writeAudit — a dark audit trail must never
+// fail the mutation that was already committed.
+export async function writeAuditMany(entries: AuditEntry[]): Promise<void> {
+  if (entries.length === 0) return;
+  const service = createServiceClient();
+  const { error } = await service.from("audit_log").insert(entries);
+  if (error) {
+    console.error("audit_log bulk write failed", { count: entries.length, error });
+  }
+}
