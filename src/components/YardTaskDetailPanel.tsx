@@ -4,13 +4,14 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type {
   UserProfile,
+  VesselZone,
   YardTask,
   YardTaskComment,
   YardTaskDocument,
   YardTaskEffort,
   YardTaskUrgency,
 } from "@/lib/types";
-import { YARD_TASK_URGENCY_LABELS } from "@/lib/types";
+import { YARD_TASK_URGENCY_LABELS, YARD_TRADES } from "@/lib/types";
 import OwnerWheel from "@/components/wheels/OwnerWheel";
 import ProgressWheel from "@/components/wheels/ProgressWheel";
 import EffortWheel from "@/components/wheels/EffortWheel";
@@ -25,11 +26,13 @@ export default function YardTaskDetailPanel({
   users,
   comments = [],
   documents = [],
+  zones = [],
   onDeleted,
 }: {
   task: YardTask;
   periodId: string;
   users: Pick<UserProfile, "id" | "full_name">[];
+  zones?: VesselZone[];
   comments?: YardTaskComment[];
   documents?: YardTaskDocument[];
   onDeleted?: () => void;
@@ -94,6 +97,10 @@ export default function YardTaskDetailPanel({
               urgency: next.urgency,
               follower_ids: next.follower_ids,
               actual_cost: next.actual_cost,
+              start_date: next.start_date,
+              end_date: next.end_date,
+              zone_id: next.zone_id,
+              trade: next.trade,
             }),
           },
         );
@@ -247,6 +254,75 @@ export default function YardTaskDetailPanel({
             </select>
           </div>
         </div>
+      </div>
+
+      {/* On the timeline. A job needs a start, an end, a room and a trade
+          before it can be drawn as a bar or checked for clashes — "+ Add item"
+          on the board creates none of those, so this is where they get set. */}
+      <div className="rounded-xl bg-slate-800 p-3">
+        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+          On the timeline
+        </p>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div>
+            <label className="block text-xs text-slate-400">Starts</label>
+            <input
+              type="date"
+              value={draft.start_date ?? ""}
+              onChange={(e) => update("start_date", e.target.value || null)}
+              className="mt-1 block w-full rounded-md bg-slate-900 px-2 py-1 text-sm text-slate-100"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400">Ends</label>
+            <input
+              type="date"
+              value={draft.end_date ?? ""}
+              min={draft.start_date ?? undefined}
+              onChange={(e) => update("end_date", e.target.value || null)}
+              className="mt-1 block w-full rounded-md bg-slate-900 px-2 py-1 text-sm text-slate-100"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400">Room</label>
+            <select
+              value={draft.zone_id ?? ""}
+              onChange={(e) => update("zone_id", e.target.value || null)}
+              className="mt-1 block w-full rounded-md bg-slate-900 px-2 py-1 text-sm text-slate-100"
+            >
+              <option value="">Not in one room</option>
+              {zones.map((z) => (
+                <option key={z.id} value={z.id}>
+                  {z.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-slate-400">Kind of work</label>
+            <select
+              value={draft.trade ?? ""}
+              onChange={(e) => update("trade", e.target.value || null)}
+              className="mt-1 block w-full rounded-md bg-slate-900 px-2 py-1 text-sm text-slate-100"
+            >
+              <option value="">Not set</option>
+              {YARD_TRADES.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        {draft.start_date && draft.end_date && draft.end_date < draft.start_date && (
+          <p className="mt-2 text-xs text-rose-300">
+            The end is before the start — this won&rsquo;t save until that&rsquo;s fixed.
+          </p>
+        )}
+        <p className="mt-2 text-[11px] leading-snug text-slate-500">
+          The room and the kind of work are what the clash check reads. Without
+          them two jobs can overlap in the engine room and nothing will say so.
+        </p>
       </div>
 
       {/* Cost */}

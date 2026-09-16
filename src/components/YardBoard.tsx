@@ -5,26 +5,22 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type {
   UserProfile,
+  VesselZone,
   YardQuadrant,
   YardTask,
   YardTaskComment,
   YardTaskDocument,
 } from "@/lib/types";
 import YardTaskDetailPanel from "@/components/YardTaskDetailPanel";
+import { quadrantTextColor } from "@/lib/yard";
 
 export interface BoardQuadrant extends YardQuadrant {
   tasks: YardTask[];
 }
 
-// Pastel quadrant colors (Tailwind *-200) are too light for body text. Map
-// each seeded pastel to its matching *-700 for readable task titles; the
-// top strip keeps the soft pastel for differentiation at a glance.
-const PASTEL_TEXT: Record<string, string> = {
-  "#bae6fd": "#0369a1", // sky-200    → sky-700
-  "#bbf7d0": "#15803d", // green-200  → green-700
-  "#fed7aa": "#c2410c", // orange-200 → orange-700
-  "#ddd6fe": "#6d28d9", // violet-200 → violet-700
-};
+// Pastel quadrant colors (Tailwind *-200) are too light for body text — the
+// readable *-700 pairing lives in src/lib/yard.ts alongside the palette
+// itself, so adding a colour there can't leave the board with unstyled text.
 
 export default function YardBoard({
   periodId,
@@ -33,11 +29,13 @@ export default function YardBoard({
   isAdmin,
   commentsByTask,
   documentsByTask,
+  zones = [],
 }: {
   periodId: string;
   quadrants: BoardQuadrant[];
   users: Pick<UserProfile, "id" | "full_name">[];
   isAdmin: boolean;
+  zones?: VesselZone[];
   commentsByTask?: Map<string, YardTaskComment[]>;
   documentsByTask?: Map<string, YardTaskDocument[]>;
 }) {
@@ -107,6 +105,7 @@ export default function YardBoard({
             users={users}
             comments={commentsByTask?.get(selectedTask.id) ?? []}
             documents={documentsByTask?.get(selectedTask.id) ?? []}
+            zones={zones}
             onDeleted={() => setSelectedTaskId(null)}
           />
         ) : (
@@ -125,6 +124,7 @@ export default function YardBoard({
             users={users}
             comments={commentsByTask?.get(selectedTask.id) ?? []}
             documents={documentsByTask?.get(selectedTask.id) ?? []}
+            zones={zones}
             onDeleted={() => setSelectedTaskId(null)}
           />
         ) : (
@@ -207,7 +207,7 @@ function QuadrantColumn({
                 style={
                   selected
                     ? undefined
-                    : { color: PASTEL_TEXT[quadrant.color] ?? "#0f172a" }
+                    : { color: quadrantTextColor(quadrant.color) }
                 }
                 className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
                   selected
