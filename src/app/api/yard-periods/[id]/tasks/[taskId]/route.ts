@@ -18,6 +18,14 @@ const patchSchema = z.object({
   actual_cost: z.number().min(0).nullable().optional(),
   urgency: z.enum(["fires", "prioritize", "reduce", "repository"]).nullable().optional(),
   follower_ids: z.array(z.string().uuid()).max(10).optional(),
+  // Schedule (17_yard_money_and_schedule). due_date stays as it was — the
+  // board, reports and reminder cron all read it; these are the Gantt's pair.
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  zone_id: z.string().uuid().nullable().optional(),
+  trade: z.string().trim().max(60).nullable().optional(),
+  estimate_id: z.string().uuid().nullable().optional(),
+  depends_on_ids: z.array(z.string().uuid()).max(30).optional(),
 });
 
 type Ctx = { params: Promise<{ id: string; taskId: string }> };
@@ -40,6 +48,20 @@ export async function PATCH(request: Request, ctx: Ctx) {
 
   const { data: before } = await supabase.from("yard_tasks").select().eq("id", taskId).single();
   if (!before) return NextResponse.json({ error: "not_found" }, { status: 404 });
+
+  // Same CHECK the database enforces, surfaced as a readable 422 instead of a
+  // constraint violation. Compare against what the row will BE, not what was
+  // sent — dragging only one end of a bar patches one of the two dates.
+  const nextStart =
+    parsed.data.start_date !== undefined ? parsed.data.start_date : before.start_date;
+  const nextEnd =
+    parsed.data.end_date !== undefined ? parsed.data.end_date : before.end_date;
+  if (nextStart && nextEnd && nextEnd < nextStart) {
+    return NextResponse.json(
+      { error: "validation_failed", issues: { formErrors: ["A job can't end before it starts."] } },
+      { status: 422 },
+    );
+  }
 
   // RLS allows admin or owner. count-based update gives a clean 403 otherwise.
   const { data: after, error, count } = await supabase

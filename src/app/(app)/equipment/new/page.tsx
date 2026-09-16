@@ -10,6 +10,12 @@ export default async function NewEquipmentPage() {
   if ((await getUserRole()) !== "admin") redirect("/equipment");
 
   const supabase = await createClient();
+
+  // Yard periods so a piece of kit can be recorded as bought in a refit.
+  const { data: yardPeriods } = await supabase
+    .from("yard_periods")
+    .select("id, name")
+    .order("start_date", { ascending: false });
   const [{ data: components }, { data: zones }] = await Promise.all([
     supabase
       .from("components")
@@ -30,6 +36,7 @@ export default async function NewEquipmentPage() {
       initial={null}
       components={components ?? []}
       zones={zones ?? []}
+      yardPeriods={yardPeriods ?? []}
     />
   );
 }

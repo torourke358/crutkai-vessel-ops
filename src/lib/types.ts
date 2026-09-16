@@ -74,9 +74,27 @@ export interface InventoryDocument {
 
 export const MAX_INVENTORY_COMPONENTS = 8;
 
+// What a piece of equipment IS, which decides where it's listed.
+//   vessel    — the boat's own machinery: engines, gensets, gearboxes
+//   guest_toy — kit guests use: scuba cylinders, regulators, scooters, seabobs
+//   galley    — F&B kit: wine fridge, ice maker, coffee machine
+export type EquipmentKind = "vessel" | "guest_toy" | "galley";
+
+export const EQUIPMENT_KIND_LABELS: Record<EquipmentKind, string> = {
+  vessel: "Vessel machinery",
+  guest_toy: "Guest toy",
+  galley: "Galley / F&B",
+};
+
 export interface Equipment {
   id: string;
   name: string;
+  kind: EquipmentKind;
+  // Set when a piece of kit was bought as part of a refit — a new wine fridge
+  // on a yard invoice. Left null for anything bought in the ordinary run of
+  // the year, which is petty cash's business, not the yard's.
+  acquired_yard_period_id: string | null;
+  acquired_invoice_id: string | null;
   make: string | null;
   model: string | null;
   serial: string | null;
@@ -214,6 +232,14 @@ export interface YardTask {
   resources: string | null;
   status: YardTaskStatus;
   actual_cost: number | null;
+  // Schedule (17_yard_money_and_schedule). due_date above is untouched — the
+  // board, reports and reminder cron all still read it.
+  start_date: string | null;
+  end_date: string | null;
+  zone_id: string | null;
+  trade: string | null;
+  estimate_id: string | null;
+  depends_on_ids: string[];
   completed_at: string | null;
   completed_by: string | null;
   created_at: string;
@@ -400,3 +426,140 @@ export interface NotificationSettings {
   maintenance_email: boolean;
   updated_at: string;
 }
+
+// ---------------------------------------------------------------------------
+// Yard money (17_yard_money_and_schedule).
+//
+// Three tables, not one: an estimate is the COMMITMENT, an invoice is the
+// BILL, a payment is CASH. A deposit is a payment with no invoice behind it.
+// Merging them would double-count a deposit against the invoice it covers.
+//
+// An estimate is also the timeline's phase bar — same row, both jobs.
+// ---------------------------------------------------------------------------
+
+export const YARD_CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"] as const;
+export type YardCurrency = (typeof YARD_CURRENCIES)[number];
+
+export type AiConfidence = "high" | "medium" | "low";
+
+export interface YardVendor {
+  id: string;
+  name: string;
+  trade: string | null;
+  contact: string | null;
+  notes: string | null;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type YardEstimateStatus =
+  | "draft"
+  | "approved"
+  | "in_progress"
+  | "closed"
+  | "declined";
+
+export const YARD_ESTIMATE_STATUS_LABELS: Record<YardEstimateStatus, string> = {
+  draft: "Draft",
+  approved: "Approved",
+  in_progress: "In progress",
+  closed: "Closed",
+  declined: "Declined",
+};
+
+export interface YardEstimate {
+  id: string;
+  yard_period_id: string;
+  vendor_id: string | null;
+  title: string;
+  reference: string | null;
+  amount: number | null;
+  currency: YardCurrency;
+  start_date: string | null;
+  end_date: string | null;
+  status: YardEstimateStatus;
+  document_path: string | null;
+  ai_extraction: unknown;
+  ai_confidence: AiConfidence | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface YardInvoice {
+  id: string;
+  yard_period_id: string;
+  estimate_id: string | null;
+  reference: string | null;
+  amount: number;
+  issued_date: string | null;
+  document_path: string | null;
+  ai_extraction: unknown;
+  ai_confidence: AiConfidence | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type YardPaymentKind = "deposit" | "progress" | "final" | "refund";
+
+export const YARD_PAYMENT_KIND_LABELS: Record<YardPaymentKind, string> = {
+  deposit: "Deposit",
+  progress: "Payment",
+  final: "Final payment",
+  refund: "Refund",
+};
+
+export interface YardPayment {
+  id: string;
+  yard_period_id: string;
+  estimate_id: string | null;
+  invoice_id: string | null;
+  kind: YardPaymentKind;
+  amount: number;
+  paid_date: string | null;
+  method: string | null;
+  reference: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Clash rules. Checked in the browser on every drag — instant, free, and the
+// same answer every time. Claude is a second pass that proposes new rows.
+export type ConflictRuleKind = "same_zone" | "trade_pair";
+export type ConflictSeverity = "warn" | "block";
+
+export interface YardConflictRule {
+  id: string;
+  kind: ConflictRuleKind;
+  trade_a: string | null;
+  trade_b: string | null;
+  zone_id: string | null;
+  severity: ConflictSeverity;
+  reason: string;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+}
+
+// The trades the clash rules know about. Free text in the column so Craig
+// isn't boxed in, but these are what the pickers offer.
+export const YARD_TRADES = [
+  "machinery",
+  "sanding",
+  "spraying",
+  "varnish",
+  "fabrication",
+  "fitting",
+  "electrical",
+  "refrigeration",
+  "canvas",
+  "hot work",
+  "cleaning",
+] as const;

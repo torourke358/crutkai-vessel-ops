@@ -18,6 +18,14 @@ const bodySchema = z.object({
   actual_cost: z.number().min(0).nullable().optional(),
   urgency: z.enum(["fires", "prioritize", "reduce", "repository"]).nullable().optional(),
   follower_ids: z.array(z.string().uuid()).max(10).default([]),
+  // Schedule (17_yard_money_and_schedule). due_date stays as it was — the
+  // board, reports and reminder cron all read it; these are the Gantt's pair.
+  start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  zone_id: z.string().uuid().nullable().optional(),
+  trade: z.string().trim().max(60).nullable().optional(),
+  estimate_id: z.string().uuid().nullable().optional(),
+  depends_on_ids: z.array(z.string().uuid()).max(30).optional(),
 });
 
 type Ctx = { params: Promise<{ id: string }> };

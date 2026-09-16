@@ -3,12 +3,20 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { writeAudit } from "@/lib/audit";
 import { getUserRole } from "@/lib/auth";
-import type { DisassemblyStep, YardQuadrant } from "@/lib/types";
+import type { DisassemblyStep, VesselZone, YardQuadrant } from "@/lib/types";
 
 // POST /api/drydock/plans/[id]/convert — turn a finished plan into yard
 // tasks: one yard_task per step in the chosen yard period (Engineering
-// quadrant by default), title prefixed with the seq number, notes carrying
-// the dependency chain + contractor flags. Marks the plan 'converted'.
+// quadrant by default), title prefixed with the seq number. Marks the plan
+// 'converted'.
+//
+// ⚠ THE DEPENDENCY GRAPH USED TO BE DESTROYED HERE. Claude works out the
+// disassembly ORDER and returns it as depends_on_seqs per step — the whole
+// point of the planner — and this route used to flatten it into a sentence
+// inside the task's notes, so nothing downstream could read it. Since
+// 17_yard_money_and_schedule, yard_tasks carries depends_on_ids, so the graph
+// now survives the conversion and the timeline can use it. The prose line is
+// kept as well: it's what a human reads on the task card.
 
 const bodySchema = z.object({
   yard_period_id: z.string().uuid(),
@@ -91,8 +99,31 @@ export async function POST(request: Request, ctx: Ctx) {
   const quadrant =
     quadrants.find((q) => q.name.trim().toLowerCase() === "engineering") ?? quadrants[0];
 
+  // The plan is photographed one area at a time and area_name is free text
+  // ("Engine room", "engine room, stbd"). Match it to a real vessel zone so
+  // the converted jobs land somewhere the clash check can reason about;
+  // leave it null rather than guess when nothing matches.
+  const { data: zones } = await supabase
+    .from("vessel_zones")
+    .select()
+    .eq("active", true)
+    .returns<VesselZone[]>();
+  const area = plan.area_name.trim().toLowerCase();
+  const zone =
+    (zones ?? []).find((z) => z.name.trim().toLowerCase() === area) ??
+    (zones ?? []).find(
+      (z) =>
+        area.includes(z.name.trim().toLowerCase()) ||
+        z.name.trim().toLowerCase().includes(area),
+    ) ??
+    null;
+
   let created = 0;
   let failed = 0;
+  // seq → the task it became, so the second pass can turn depends_on_seqs
+  // into real foreign keys.
+  const idBySeq = new Map<number, string>();
+
   for (const s of steps) {
     const { data: row, error } = await supabase
       .from("yard_tasks")
@@ -103,6 +134,10 @@ export async function POST(request: Request, ctx: Ctx) {
         description: stepNotes(s) || null,
         status: "todo",
         progress_pct: 0,
+        zone_id: zone?.id ?? null,
+        // Disassembly is machinery work by definition — which is exactly what
+        // the "one machinery job per room" rule is there to catch.
+        trade: "machinery",
         // Contractor blockers are the fires — everything else is important
         // but not urgent yet.
         urgency: s.is_blocking ? "fires" : "prioritize",
@@ -114,6 +149,7 @@ export async function POST(request: Request, ctx: Ctx) {
       failed++;
       continue;
     }
+    idBySeq.set(s.seq, row.id);
     created++;
     await writeAudit({
       user_id: user.id,
@@ -122,6 +158,31 @@ export async function POST(request: Request, ctx: Ctx) {
       action: "create",
       after_state: row,
     });
+  }
+
+  // Second pass: wire the dependencies now that every step has an id. A
+  // dependency on a step that failed to insert is dropped rather than left
+  // dangling. Failures here are logged, not fatal — the tasks are already
+  // created and a missing edge is better than losing the conversion.
+  let edges = 0;
+  for (const s of steps) {
+    if (s.depends_on_seqs.length === 0) continue;
+    const self = idBySeq.get(s.seq);
+    if (!self) continue;
+    const deps = s.depends_on_seqs
+      .map((seq) => idBySeq.get(seq))
+      .filter((v): v is string => Boolean(v) && v !== self);
+    if (deps.length === 0) continue;
+
+    const { error: depErr } = await supabase
+      .from("yard_tasks")
+      .update({ depends_on_ids: deps })
+      .eq("id", self);
+    if (depErr) {
+      console.error("convert: dependency wiring failed", { task: self, error: depErr });
+      continue;
+    }
+    edges += deps.length;
   }
 
   const { data: after, error: updErr } = await supabase
@@ -145,5 +206,12 @@ export async function POST(request: Request, ctx: Ctx) {
     after_state: after,
   });
 
-  return NextResponse.json({ created, failed, yard_period_id, quadrant_id: quadrant.id });
+  return NextResponse.json({
+    created,
+    failed,
+    dependencies: edges,
+    zone_id: zone?.id ?? null,
+    yard_period_id,
+    quadrant_id: quadrant.id,
+  });
 }

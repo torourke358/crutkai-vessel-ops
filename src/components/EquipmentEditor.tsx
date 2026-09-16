@@ -8,7 +8,7 @@ import EquipmentForm, {
   equipmentValuesToBody,
   type EquipmentFormValues,
 } from "@/components/EquipmentForm";
-import type { Component, Equipment, VesselZone } from "@/lib/types";
+import type { Component, Equipment, VesselZone, YardPeriod } from "@/lib/types";
 
 // A preventive-maintenance schedule typed inline while creating a new unit.
 type PmDraft = { id: number; title: string; value: string; unit: "days" | "hours" };
@@ -22,10 +22,12 @@ export default function EquipmentEditor({
   initial,
   components,
   zones,
+  yardPeriods = [],
 }: {
   initial: Equipment | null;
   components: Component[];
   zones: VesselZone[];
+  yardPeriods?: Pick<YardPeriod, "id" | "name">[];
 }) {
   const router = useRouter();
   const isEdit = initial != null;
@@ -34,6 +36,8 @@ export default function EquipmentEditor({
     initial
       ? {
           name: initial.name,
+          kind: initial.kind ?? "vessel",
+          acquired_yard_period_id: initial.acquired_yard_period_id ?? "",
           make: initial.make ?? "",
           model: initial.model ?? "",
           serial: initial.serial ?? "",
@@ -180,6 +184,7 @@ export default function EquipmentEditor({
         onChange={(patch) => setValues((v) => ({ ...v, ...patch }))}
         components={components}
         zones={zones}
+        yardPeriods={yardPeriods}
       />
 
       {!isEdit && (
