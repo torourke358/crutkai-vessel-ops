@@ -9,6 +9,7 @@ const TABS: { href: string; label: string }[] = [
   { href: "/", label: "Daily" },
   { href: "/inventory", label: "Inventory" },
   { href: "/equipment", label: "Equipment" },
+  { href: "/toys", label: "Toys" },
   { href: "/maintenance", label: "Maintenance" },
   { href: "/yard", label: "Yard" },
   { href: "/reports", label: "Reports" },

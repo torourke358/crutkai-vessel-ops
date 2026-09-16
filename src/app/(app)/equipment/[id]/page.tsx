@@ -25,6 +25,12 @@ export default async function EquipmentDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+
+  // Yard periods so a piece of kit can be recorded as bought in a refit.
+  const { data: yardPeriods } = await supabase
+    .from("yard_periods")
+    .select("id, name")
+    .order("start_date", { ascending: false });
   const role = await getUserRole();
   // eslint-disable-next-line react-hooks/purity -- server component, evaluated per request
   const nowMs = Date.now();
@@ -342,6 +348,7 @@ export default async function EquipmentDetailPage({
             initial={equipment}
             components={components ?? []}
             zones={zones ?? []}
+            yardPeriods={yardPeriods ?? []}
           />
         </section>
       ) : (

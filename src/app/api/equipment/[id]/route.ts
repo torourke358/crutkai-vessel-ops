@@ -19,6 +19,9 @@ const patchSchema = z.object({
   ga_x: z.number().min(0).max(100).nullable().optional(),
   ga_y: z.number().min(0).max(100).nullable().optional(),
   notes: z.string().trim().max(2000).nullable().optional(),
+  kind: z.enum(["vessel", "guest_toy", "galley"]).optional(),
+  acquired_yard_period_id: z.string().uuid().nullable().optional(),
+  acquired_invoice_id: z.string().uuid().nullable().optional(),
   active: z.boolean().optional(),
 });
 

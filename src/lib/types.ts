@@ -74,9 +74,27 @@ export interface InventoryDocument {
 
 export const MAX_INVENTORY_COMPONENTS = 8;
 
+// What a piece of equipment IS, which decides where it's listed.
+//   vessel    — the boat's own machinery: engines, gensets, gearboxes
+//   guest_toy — kit guests use: scuba cylinders, regulators, scooters, seabobs
+//   galley    — F&B kit: wine fridge, ice maker, coffee machine
+export type EquipmentKind = "vessel" | "guest_toy" | "galley";
+
+export const EQUIPMENT_KIND_LABELS: Record<EquipmentKind, string> = {
+  vessel: "Vessel machinery",
+  guest_toy: "Guest toy",
+  galley: "Galley / F&B",
+};
+
 export interface Equipment {
   id: string;
   name: string;
+  kind: EquipmentKind;
+  // Set when a piece of kit was bought as part of a refit — a new wine fridge
+  // on a yard invoice. Left null for anything bought in the ordinary run of
+  // the year, which is petty cash's business, not the yard's.
+  acquired_yard_period_id: string | null;
+  acquired_invoice_id: string | null;
   make: string | null;
   model: string | null;
   serial: string | null;

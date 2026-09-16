@@ -1,11 +1,14 @@
 "use client";
 
-import type { Component, VesselZone } from "@/lib/types";
+import type { Component, EquipmentKind, VesselZone, YardPeriod } from "@/lib/types";
+import { EQUIPMENT_KIND_LABELS } from "@/lib/types";
 import PhotoGallery from "@/components/PhotoGallery";
 import GaPinPicker from "@/components/GaPinPicker";
 
 export interface EquipmentFormValues {
   name: string;
+  kind: EquipmentKind;
+  acquired_yard_period_id: string;
   make: string;
   model: string;
   serial: string;
@@ -30,11 +33,13 @@ export default function EquipmentForm({
   onChange,
   components,
   zones,
+  yardPeriods = [],
 }: {
   values: EquipmentFormValues;
   onChange: (patch: Partial<EquipmentFormValues>) => void;
   components: Component[];
   zones: VesselZone[];
+  yardPeriods?: Pick<YardPeriod, "id" | "name">[];
 }) {
   // A location string that isn't one of the managed vessel_zones names — e.g.
   // a legacy free-text value typed before this became a dropdown. We keep it
@@ -118,6 +123,62 @@ export default function EquipmentForm({
           />
         </div>
       </div>
+
+      {/* What this is. Guest toys get their own page; galley kit is the F&B
+          bucket. It sits first because it changes what the entry is for. */}
+      <div>
+        <label htmlFor="kind" className={labelClass}>
+          What is it?
+        </label>
+        <select
+          id="kind"
+          value={values.kind}
+          onChange={(e) => onChange({ kind: e.target.value as EquipmentKind })}
+          className={inputClass}
+        >
+          {(Object.keys(EQUIPMENT_KIND_LABELS) as EquipmentKind[]).map((k) => (
+            <option key={k} value={k}>
+              {EQUIPMENT_KIND_LABELS[k]}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-slate-500">
+          {values.kind === "guest_toy"
+            ? "Shows on the Toys page. Give it a service schedule and the app will warn before it goes out of test."
+            : values.kind === "galley"
+              ? "Food and beverage kit — a wine fridge, an ice maker, a coffee machine."
+              : "The boat's own machinery."}
+        </p>
+      </div>
+
+      {/* Bought in a refit? Tim's rule: kit bought as part of a yard period is
+          capital and belongs to yard money; the same item replaced mid-season
+          is operating cost and stays in petty cash. Recording the period is
+          what lets a wine fridge be traced back to the refit that paid for it. */}
+      {yardPeriods.length > 0 && (
+        <div>
+          <label htmlFor="acquired_yard_period_id" className={labelClass}>
+            Bought as part of a yard period?
+          </label>
+          <select
+            id="acquired_yard_period_id"
+            value={values.acquired_yard_period_id}
+            onChange={(e) => onChange({ acquired_yard_period_id: e.target.value })}
+            className={inputClass}
+          >
+            <option value="">No — bought in the ordinary run of the year</option>
+            {yardPeriods.map((yp) => (
+              <option key={yp.id} value={yp.id}>
+                {yp.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-slate-500">
+            Leave this alone unless it came out of a refit. Everyday replacements are petty cash,
+            not yard money.
+          </p>
+        </div>
+      )}
 
       <div>
         <label htmlFor="cost" className={labelClass}>
@@ -267,6 +328,8 @@ export default function EquipmentForm({
 
 export const emptyEquipmentForm: EquipmentFormValues = {
   name: "",
+  kind: "vessel",
+  acquired_yard_period_id: "",
   make: "",
   model: "",
   serial: "",
@@ -285,6 +348,8 @@ export const emptyEquipmentForm: EquipmentFormValues = {
 export function equipmentValuesToBody(v: EquipmentFormValues) {
   return {
     name: v.name.trim(),
+    kind: v.kind,
+    acquired_yard_period_id: v.acquired_yard_period_id || null,
     make: v.make.trim() || null,
     model: v.model.trim() || null,
     serial: v.serial.trim() || null,
